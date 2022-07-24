@@ -4,7 +4,12 @@ MyTcpSocket::MyTcpSocket()
 {
     connect(this, SIGNAL(readyRead()), // 当接收到客户端的数据时，服务器会发送readyRead()信号
             this, SLOT(receiveMsg())); // 需要由服务器的相应receiveMsg槽函数进行处理
+    connect(this, SIGNAL(disconnected()), this, SLOT(handleClientOffline())); // 关联Socket连接断开与客户端下线处理槽函数
+}
 
+QString MyTcpSocket::getStrName()
+{
+    return m_strName;
 }
 
 // 处理注册请求并返回响应PDU
@@ -34,6 +39,36 @@ PDU* handleRegistRequest(PDU* pdu)
     return resPdu;
 }
 
+// 处理登录请求并返回响应PDU
+PDU* handleLoginRequest(PDU* pdu, QString& m_strName)
+{
+    char caName[32] = {'\0'};
+    char caPwd[32] = {'\0'};
+    // 拷贝读取的信息
+    strncpy(caName, pdu -> caData, 32);
+    strncpy(caPwd, pdu -> caData + 32, 32);
+    qDebug() << pdu -> uiMsgType << " " << caName << " " << caPwd;
+    bool ret = DBOperate::getInstance().handleLogin(caName, caPwd); // 处理请求，插入数据库
+
+    // 响应客户端
+    PDU *resPdu = mkPDU(0); // 响应消息
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_LOGIN_RESPOND;
+    if(ret)
+    {
+        strcpy(resPdu -> caData, LOGIN_OK);
+        // 在登陆成功时，记录Socket对应的用户名
+        m_strName = caName;
+        qDebug() << "m_strName: " << m_strName;
+    }
+    else
+    {
+        strcpy(resPdu -> caData, LOGIN_FAILED);
+    }
+    // qDebug() << resPdu -> uiMsgType << " " << resPdu ->caData;
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
@@ -53,6 +88,11 @@ void MyTcpSocket::receiveMsg()
         resPdu = handleRegistRequest(pdu); // 请求处理
         break;
     }
+    case ENUM_MSG_TYPE_LOGIN_REQUEST: // 登录请求
+    {
+        resPdu = handleLoginRequest(pdu, m_strName);
+        break;
+    }
     default:
         break;
     }
@@ -69,6 +109,12 @@ void MyTcpSocket::receiveMsg()
     // 释放空间
     free(pdu);
     pdu = NULL;
+}
+
+void MyTcpSocket::handleClientOffline()
+{
+    DBOperate::getInstance().handleOffline(m_strName.toStdString().c_str());
+    emit offline(this); // 发送给mytcpserver该socket删除信号
 }
 
 

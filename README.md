@@ -9,6 +9,16 @@
 
 设计特性：单例设计模式、网络通信、多线程
 
+## :airplane:项目参考资源
+
+[【收藏】c++项目实战，手把手教你搭建属于自己的网盘系统~\_哔哩哔哩\_bilibili](https://www.bilibili.com/video/BV1bR4y1774v?p=1&vd_source=9abbc05576cd3bb02674558403865122)
+
+## :two_hearts:学习笔记
+
+详细记录了开发的流程，如有错误，请您指正。
+
+[LightInk2020的C++项目 (notion.site)](https://lightink2020.notion.site/lightink2020/C-26c2299de7a04180a1e04de71a356590)
+
 ## :dove:开发时间表
 
 - [x] 07月22日    【初始化】项目初始化、搭建数据库

@@ -52,9 +52,52 @@ bool DBOperate::handleRegist(const char *name, const char *pwd)
         return false;
     }
     // 数据插入数据库
-    QString strQuery = QString("insert into userInfo(name, pwd) values('%1', '%2')").arg(name).arg(pwd);
+    QString strQuery = QString("insert into userInfo(name, pwd) values(\'%1\', \'%2\')").arg(name).arg(pwd);
     QSqlQuery query;
 
     // qDebug() << strQuery;
     return query.exec(strQuery); // 数据库中name索引是unique，所以如果name重复会返回false，插入成功返回true
+}
+
+bool DBOperate::handleLogin(const char *name, const char *pwd)
+{
+    // 考虑极端情况
+    if(NULL == name || NULL == pwd)
+    {
+        return false;
+    }
+    // 数据库查询
+    QString strQuery = QString("select * from userInfo where name = \'%1\' and pwd = \'%2\' "
+                               "and online = 0").arg(name).arg(pwd); // online = 0 可以判定用户是否未登录，不允许重复登陆
+    QSqlQuery query;
+
+    // qDebug() << strQuery;
+    query.exec(strQuery);
+
+    if(query.next()) // 每次调用next都会读取一条数据，并将结果放入query中，返回值为true，无数据则返回false
+    {
+        // 如果登录成功，需要设置online = 1，并返回true
+        strQuery = QString("update userInfo set online = 1 where name = \'%1\' and pwd = \'%2\' ").arg(name).arg(pwd);
+        return query.exec(strQuery);
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool DBOperate::handleOffline(const char *name)
+{
+    if(NULL == name)
+    {
+        qDebug() << "name is NULL";
+        return false;
+    }
+    // 更新online状态为0
+    QString strQuery = QString("update userInfo set online = 0 where name = \'%1\' ").arg(name);
+    QSqlQuery query;
+
+    qDebug() << strQuery;
+
+    return query.exec(strQuery);
 }

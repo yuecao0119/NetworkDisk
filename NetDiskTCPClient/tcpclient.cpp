@@ -96,6 +96,18 @@ void TcpClient::receiveMsg()
         }
         break;
     }
+    case ENUM_MSG_TYPE_LOGIN_RESPOND: // 登录请求
+    {
+        if(0 == strcmp(pdu -> caData, LOGIN_OK))
+        {
+            QMessageBox::information(this, "登录", LOGIN_OK);
+        }
+        else if(0 == strcmp(pdu -> caData, LOGIN_FAILED))
+        {
+            QMessageBox::warning(this, "登录", LOGIN_FAILED);
+        }
+        break;
+    }
     default:
         break;
     }
@@ -127,7 +139,27 @@ void TcpClient::receiveMsg()
 
 void TcpClient::on_login_pb_clicked()
 {
+    QString strName = ui -> name_le -> text();
+    QString strPwd = ui -> pwd_le -> text();
+    // 合理性判断
+    if(!strName.isEmpty() && !strPwd.isEmpty())
+    {
+        PDU *pdu = mkPDU(0); // 实际消息体积为0
+        pdu -> uiMsgType = ENUM_MSG_TYPE_LOGIN_REQUEST; // 设置为登录请求消息类型
+        // 拷贝用户名和密码信息到caData
+        memcpy(pdu -> caData, strName.toStdString().c_str(), 32); // 由于数据库设定的32位，所以最多只拷贝前32位
+        memcpy(pdu -> caData + 32, strPwd.toStdString().c_str(), 32);
+        qDebug() << pdu -> uiMsgType << " " << pdu -> caData << " " << pdu -> caData + 32;
+        m_tcpSocket.write((char*)pdu, pdu -> uiPDULen); // 发送消息
 
+        // 释放空间
+        free(pdu);
+        pdu = NULL;
+    }
+    else
+    {
+        QMessageBox::critical(this, "登录", "登录失败：用户名或密码为空！");
+    }
 }
 
 void TcpClient::on_regist_pb_clicked()
