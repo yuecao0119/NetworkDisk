@@ -1,0 +1,11 @@
+debug/dboperate.o
+debug/main.o
+debug/mytcpserver.o
+debug/mytcpsocket.o
+debug/protocol.o
+debug/tcpserver.o
+debug/qrc_config.o
+debug/moc_dboperate.o
+debug/moc_mytcpserver.o
+debug/moc_mytcpsocket.o
+debug/moc_tcpserver.o
