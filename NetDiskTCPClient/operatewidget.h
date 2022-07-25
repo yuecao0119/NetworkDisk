@@ -12,6 +12,8 @@ class OperateWidget : public QWidget
     Q_OBJECT
 public:
     explicit OperateWidget(QWidget *parent = nullptr);
+    static OperateWidget &getInstance(); // 将operatewidget设计为单例模式
+    Friend *getPFriend() const;
 
 signals:
 

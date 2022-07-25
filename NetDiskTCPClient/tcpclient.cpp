@@ -4,6 +4,7 @@
 #include <QDebug> // 调试
 #include <QMessageBox> // 消息提示框
 #include <QHostAddress>
+
 #include "protocol.h"
 
 TcpClient::TcpClient(QWidget *parent)
@@ -51,29 +52,22 @@ void TcpClient::loadConfig()
     }
 }
 
+TcpClient &TcpClient::getInstance()
+{
+    static TcpClient instance;
+    return instance;
+}
+
 // 头文件中检测服务器是否连接成功函数实现
 void TcpClient::showConnect()
 {
-    QMessageBox::information(this, "连接服务器", "连接服务器成功");
+    // QMessageBox::information(this, "连接服务器", "连接服务器成功");
+    qDebug() << "连接服务器成功";
 }
-
-// 处理注册响应消息
-//void handleRegistRespond(PDU* pdu)
-//{
-//    if(0 == strcmp(pdu -> caData, REGIST_OK))
-//    {
-//        QMessageBox::information(NULL, "注册", REGIST_OK);
-//    }
-//    else if(0 == strcmp(pdu -> caData, REGIST_FAILED))
-//    {
-//        QMessageBox::warning(NULL, "注册", REGIST_FAILED);
-//    }
-//}
-
 
 void TcpClient::receiveMsg()
 {
-    qDebug() << m_tcpSocket.bytesAvailable(); // 输出接收到的数据大小
+    // qDebug() << m_tcpSocket.bytesAvailable(); // 输出接收到的数据大小
     uint uiPDULen = 0;
     m_tcpSocket.read((char*)&uiPDULen, sizeof(uint)); // 先读取uint大小的数据，首个uint正是总数据大小
     uint uiMsgLen = uiPDULen - sizeof(PDU); // 实际消息大小，sizeof(PDU)只会计算结构体大小，而不是分配的大小
@@ -84,7 +78,7 @@ void TcpClient::receiveMsg()
     // 根据不同消息类型，执行不同操作
     switch(pdu -> uiMsgType)
     {
-    case ENUM_MSG_TYPE_REGIST_RESPOND: // 注册请求
+    case ENUM_MSG_TYPE_REGIST_RESPOND: // 注册响应
     {
         if(0 == strcmp(pdu -> caData, REGIST_OK))
         {
@@ -96,15 +90,39 @@ void TcpClient::receiveMsg()
         }
         break;
     }
-    case ENUM_MSG_TYPE_LOGIN_RESPOND: // 登录请求
+    case ENUM_MSG_TYPE_LOGIN_RESPOND: // 登录响应
     {
         if(0 == strcmp(pdu -> caData, LOGIN_OK))
         {
-            QMessageBox::information(this, "登录", LOGIN_OK);
+            // QMessageBox::information(this, "登录", LOGIN_OK);
+            // 登录跳转
+            OperateWidget::getInstance().show(); // 显示主操作页面
+            this -> hide(); // 隐藏登陆页面
         }
         else if(0 == strcmp(pdu -> caData, LOGIN_FAILED))
         {
             QMessageBox::warning(this, "登录", LOGIN_FAILED);
+        }
+        break;
+    }
+    case ENUM_MSG_TYPE_ONLINE_USERS_RESPOND: // 查询所有在线用户响应
+    {
+        OperateWidget::getInstance().getPFriend() -> setOnlineUsers(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_SEARCH_USER_RESPOND: // 查找用户响应
+    {
+        if(0 == strcmp(SEARCH_USER_OK, pdu -> caData))
+        {
+            QMessageBox::information(this, "查找", OperateWidget::getInstance().getPFriend()->getStrSearchName() + SEARCH_USER_OK);
+        }
+        else if(0 == strcmp(SEARCH_USER_OFFLINE, pdu -> caData))
+        {
+            QMessageBox::information(this, "查找", OperateWidget::getInstance().getPFriend()->getStrSearchName() + SEARCH_USER_OFFLINE);
+        }
+        else if(0 == strcmp(SEARCH_USER_EMPTY, pdu -> caData))
+        {
+            QMessageBox::warning(this, "查找", OperateWidget::getInstance().getPFriend()->getStrSearchName() + SEARCH_USER_EMPTY);
         }
         break;
     }
@@ -116,26 +134,6 @@ void TcpClient::receiveMsg()
     free(pdu);
     pdu = NULL;
 }
-
-// 客户端点击发送按钮事件 测试通信是否正常
-//void TcpClient::on_send_pb_clicked()
-//{
-//    QString strMsg = ui->send_le->text();
-//    if(!strMsg.isEmpty()) // 消息非空才发送
-//    {
-//        PDU *pdu = mkPDU(strMsg.size());
-//        pdu -> uiMsgType = 0; // 消息类型
-//        memcpy(pdu -> caMsg, strMsg.toStdString().c_str(), strMsg.size()); // 将需要传递的信息拷贝到协议数据单元中
-//        m_tcpSocket.write((char*)pdu, pdu -> uiPDULen); // 通过socket发送信息
-//        // 释放空间
-//        free(pdu);
-//        pdu = NULL;
-//    }
-//    else // 消息为空警告
-//    {
-//        QMessageBox::warning(this, "信息发送", "发送的信息不能为空");
-//    }
-//}
 
 void TcpClient::on_login_pb_clicked()
 {
@@ -191,4 +189,9 @@ void TcpClient::on_regist_pb_clicked()
 void TcpClient::on_logout_pb_clicked()
 {
 
+}
+
+QTcpSocket& TcpClient::getTcpSocket()
+{
+    return m_tcpSocket;
 }

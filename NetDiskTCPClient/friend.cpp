@@ -1,5 +1,8 @@
 #include "friend.h"
 
+#include "tcpclient.h"  // 不放在头文件，减少交叉引入
+#include <QInputDialog> // 一个内置输入框窗口
+
 Friend::Friend(QWidget *parent) : QWidget(parent)
 {
     m_pFriendLW = new QListWidget;
@@ -38,16 +41,61 @@ Friend::Friend(QWidget *parent) : QWidget(parent)
     // 绑定打开所有在线用户按钮与对应事件
     connect(m_pSOrHOnlineUserPB, SIGNAL(clicked(bool)),
             this, SLOT(showOrHideOnlineUserW()));
+    // 绑定查找用户按钮与对应事件
+    connect(m_pSearchUserPB, SIGNAL(clicked(bool)),
+            this, SLOT(searchUser()));
+}
+
+void Friend::setOnlineUsers(PDU* pdu)
+{
+    if(NULL == pdu)
+    {
+        return ;
+    }
+    m_pOnlineUserW->setOnlineUsers(pdu);
 }
 
 void Friend::showOrHideOnlineUserW()
 {
     if(m_pOnlineUserW -> isHidden())
     {
+        // 显示onlineUserWid页面
         m_pOnlineUserW -> show();
+        // 发送请求查询数据库获取在线用户
+        PDU *pdu = mkPDU(0);
+        pdu -> uiMsgType = ENUM_MSG_TYPE_ONLINE_USERS_REQUEST;
+        TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+        free(pdu);
+        pdu = NULL;
     }
     else
     {
         m_pOnlineUserW -> hide();
     }
+}
+
+void Friend::searchUser()
+{
+    m_strSearchName = QInputDialog::getText(this, "搜索", "用户名："); // 通过输入子页面来获取用户输入返回一个文本类型
+
+    if(!m_strSearchName.isEmpty())
+    {
+        qDebug() << "查找：" << m_strSearchName;
+        PDU *pdu = mkPDU(0);
+        pdu -> uiMsgType = ENUM_MSG_TYPE_SEARCH_USER_REQUEST;
+        memcpy((char*)pdu -> caData, m_strSearchName.toStdString().c_str(), m_strSearchName.size());
+        TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+        free(pdu);
+        pdu = NULL;
+    }
+}
+
+QString Friend::getStrSearchName() const
+{
+    return m_strSearchName;
+}
+
+void Friend::setStrSearchName(const QString &strSearchName)
+{
+    m_strSearchName = strSearchName;
 }

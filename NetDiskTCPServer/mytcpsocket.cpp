@@ -20,7 +20,7 @@ PDU* handleRegistRequest(PDU* pdu)
     // 拷贝读取的信息
     strncpy(caName, pdu -> caData, 32);
     strncpy(caPwd, pdu -> caData + 32, 32);
-    qDebug() << pdu -> uiMsgType << " " << caName << " " << caPwd;
+    // qDebug() << pdu -> uiMsgType << " " << caName << " " << caPwd;
     bool ret = DBOperate::getInstance().handleRegist(caName, caPwd); // 处理请求，插入数据库
 
     // 响应客户端
@@ -47,7 +47,7 @@ PDU* handleLoginRequest(PDU* pdu, QString& m_strName)
     // 拷贝读取的信息
     strncpy(caName, pdu -> caData, 32);
     strncpy(caPwd, pdu -> caData + 32, 32);
-    qDebug() << pdu -> uiMsgType << " " << caName << " " << caPwd;
+    // qDebug() << pdu -> uiMsgType << " " << caName << " " << caPwd;
     bool ret = DBOperate::getInstance().handleLogin(caName, caPwd); // 处理请求，插入数据库
 
     // 响应客户端
@@ -58,7 +58,7 @@ PDU* handleLoginRequest(PDU* pdu, QString& m_strName)
         strcpy(resPdu -> caData, LOGIN_OK);
         // 在登陆成功时，记录Socket对应的用户名
         m_strName = caName;
-        qDebug() << "m_strName: " << m_strName;
+        // qDebug() << "m_strName: " << m_strName;
     }
     else
     {
@@ -69,9 +69,54 @@ PDU* handleLoginRequest(PDU* pdu, QString& m_strName)
     return resPdu;
 }
 
+// 处理查询所有在线用户的请求
+PDU* handleOnlineUsersRequest()
+{
+    QStringList strList = DBOperate::getInstance().handleOnlineUsers(); // 查询请求，查询数据库所有在线用户
+    uint uiMsgLen = strList.size() * 32; // 消息报文的长度
+
+    // 响应客户端
+    PDU *resPdu = mkPDU(uiMsgLen); // 响应消息
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_ONLINE_USERS_RESPOND;
+    // qDebug() << "在线用户数：" << strList.size();
+    for(int i = 0; i < strList.size(); ++ i)
+    {
+        memcpy((char*)(resPdu -> caMsg) + 32 * i, strList[i].toStdString().c_str(), strList[i].size());
+        // qDebug() << "所有在线用户有：" << (char*)(resPdu -> caMsg) + 32 * i;
+    }
+
+    return resPdu;
+}
+
+// 处理查找用户的请求
+PDU* handleSearchUserRequest(PDU* pdu)
+{
+    char caName[32] = {'\0'};
+    strncpy(caName, pdu -> caData, 32);
+    int ret = DBOperate::getInstance().handleSearchUser(caName); // 处理请求
+
+    // 响应客户端
+    PDU *resPdu = mkPDU(0); // 响应消息
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_SEARCH_USER_RESPOND;
+    if(ret == 1)
+    {
+        strcpy(resPdu -> caData, SEARCH_USER_OK);
+    }
+    else if(ret == 0)
+    {
+        strcpy(resPdu -> caData, SEARCH_USER_OFFLINE);
+    }
+    else
+    {
+        strcpy(resPdu -> caData, SEARCH_USER_EMPTY);
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
-    qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
+    // qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
     uint uiPDULen = 0;
     this -> read((char*)&uiPDULen, sizeof(uint)); // 先读取uint大小的数据，首个uint正是总数据大小
     uint uiMsgLen = uiPDULen - sizeof(PDU); // 实际消息大小，sizeof(PDU)只会计算结构体大小，而不是分配的大小
@@ -93,6 +138,16 @@ void MyTcpSocket::receiveMsg()
         resPdu = handleLoginRequest(pdu, m_strName);
         break;
     }
+    case ENUM_MSG_TYPE_ONLINE_USERS_REQUEST: // 查询所有在线用户请求
+    {
+        resPdu = handleOnlineUsersRequest();
+        break;
+    }
+    case ENUM_MSG_TYPE_SEARCH_USER_REQUEST: // 查找用户请求
+    {
+        resPdu = handleSearchUserRequest(pdu);
+        break;
+    }
     default:
         break;
     }
@@ -100,7 +155,7 @@ void MyTcpSocket::receiveMsg()
     // 响应客户端
     if(NULL != resPdu)
     {
-        qDebug() << resPdu -> uiMsgType << " " << resPdu ->caData;
+        // qDebug() << resPdu -> uiMsgType << " " << resPdu ->caData;
         this -> write((char*)resPdu, resPdu -> uiPDULen);
         // 释放空间
         free(resPdu);

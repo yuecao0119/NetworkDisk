@@ -2,6 +2,7 @@
 #define ONLINEUSERWID_H
 
 #include <QWidget>
+#include "protocol.h"
 
 namespace Ui {
 class OnlineUserWid;
@@ -14,6 +15,8 @@ class OnlineUserWid : public QWidget
 public:
     explicit OnlineUserWid(QWidget *parent = nullptr);
     ~OnlineUserWid();
+
+    void setOnlineUsers(PDU *pdu);     // 设置页面显示所有的在线用户
 
 private:
     Ui::OnlineUserWid *ui;

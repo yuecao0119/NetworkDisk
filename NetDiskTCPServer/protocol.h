@@ -10,21 +10,34 @@ typedef unsigned int uint;
 // 定义响应消息
 #define REGIST_OK "regist ok"
 #define REGIST_FAILED "regist failed"
+
 #define LOGIN_OK "login ok"
 #define LOGIN_FAILED "login failed"
+
+#define SEARCH_USER_OK "search user ok"
+#define SEARCH_USER_OFFLINE "user offline"
+#define SEARCH_USER_EMPTY "no such people"
 
 // 枚举方式，定义消息类型
 enum ENUM_MSG_TYPE
 {
     ENUM_MSG_TYPE_MIN = 0,
-    ENUM_MSG_TYPE_REGIST_REQUEST, // 注册请求
-    ENUM_MSG_TYPE_REGIST_RESPOND, // 注册回复
-    ENUM_MSG_TYPE_LOGIN_REQUEST,  // 登录请求
-    ENUM_MSG_TYPE_LOGIN_RESPOND,  // 登录回复
+
+    ENUM_MSG_TYPE_REGIST_REQUEST,       // 注册请求
+    ENUM_MSG_TYPE_REGIST_RESPOND,       // 注册回复
+
+    ENUM_MSG_TYPE_LOGIN_REQUEST,        // 登录请求
+    ENUM_MSG_TYPE_LOGIN_RESPOND,        // 登录回复
+
+    ENUM_MSG_TYPE_ONLINE_USERS_REQUEST, // 所有在线用户请求
+    ENUM_MSG_TYPE_ONLINE_USERS_RESPOND, // 所有在线用户响应
+
+    ENUM_MSG_TYPE_SEARCH_USER_REQUEST,  // 查找用户请求
+    ENUM_MSG_TYPE_SEARCH_USER_RESPOND,  // 查找用户响应
+
 //    ENUM_MSG_TYPE_REQUEST,
 //    ENUM_MSG_TYPE_RESPOND,
-//    ENUM_MSG_TYPE_REQUEST,
-//    ENUM_MSG_TYPE_RESPOND,
+
     ENUM_MSG_TYPE_MAX = 0x00ffffff, // uint最大值 0xffffffff
 };
 

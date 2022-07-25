@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QFile> // 操作文件，在这里主要为了启动时访问配置文件
 #include <QTcpSocket> // 建立TCP会话连接，为了实现TCP客户端连接服务器及与数据库交互
+#include "operatewidget.h" // 主操作页面
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class TcpClient; }
@@ -17,6 +18,9 @@ public:
     TcpClient(QWidget *parent = nullptr);
     ~TcpClient();
     void loadConfig(); // 加载配置文件信息
+
+    static TcpClient& getInstance(); // 将TcpClient设置为单例模式，方便外部调用socket功能
+    QTcpSocket& getTcpSocket();
 
 public slots: // 槽函数，主要用来处理信号
     void showConnect(); // 检测服务器是否连接成功

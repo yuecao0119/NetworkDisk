@@ -23,3 +23,15 @@ OperateWidget::OperateWidget(QWidget *parent) : QWidget(parent)
     connect(m_pListWidget, SIGNAL(currentRowChanged(int)), // 函数参数为改变后的行号
             m_pSW, SLOT(setCurrentIndex(int))); // 函数参数为设置的页面下标
 }
+
+OperateWidget &OperateWidget::getInstance()
+{
+    static OperateWidget instance;
+    return instance;
+}
+
+Friend *OperateWidget::getPFriend() const
+{
+    return m_pFriend;
+}
+

@@ -101,3 +101,40 @@ bool DBOperate::handleOffline(const char *name)
 
     return query.exec(strQuery);
 }
+
+QStringList DBOperate::handleOnlineUsers()
+{
+    QString strQuery = QString("select name from userInfo where online = 1 ");
+    QSqlQuery query;
+    QStringList result;
+    result.clear(); // 清除内容
+
+    query.exec(strQuery); // 执行语句！  这里忘记一次导致未返回数据
+    while(query.next())
+    {
+        qDebug() << result;
+        result.append(query.value(0).toString());
+    }
+
+    return result; // 返回查询到所有在线用户的姓名
+}
+
+int DBOperate::handleSearchUser(const char *name)
+{
+    if(NULL == name)
+    {
+        return 2;
+    }
+    QString strQuery = QString("select online from userInfo where name = \'%1\' ").arg(name);
+    QSqlQuery query;
+
+    query.exec(strQuery);
+    if(query.next())
+    {
+        return query.value(0).toInt(); // 存在并在线返回1，存在不在线返回0
+    }
+    else
+    {
+        return 2; // 不存在该用户
+    }
+}

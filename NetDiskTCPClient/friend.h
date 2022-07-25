@@ -9,7 +9,7 @@
 #include <QPushButton>
 #include <QVBoxLayout> // 垂直布局
 #include <QHBoxLayout> // 水平布局
-
+#include "protocol.h"
 #include "onlineuserwid.h" // 所有在线用户
 
 class Friend : public QWidget
@@ -17,9 +17,14 @@ class Friend : public QWidget
     Q_OBJECT
 public:
     explicit Friend(QWidget *parent = nullptr);
+    void setOnlineUsers(PDU* pdu);    // 设置所有在线用户的信息
+
+    QString getStrSearchName() const;
+    void setStrSearchName(const QString &strSearchName);
 
 public slots:
     void showOrHideOnlineUserW();     // 处理显示/隐藏所有在线用户按钮点击信号的槽函数
+    void searchUser();                // 处理查找用户按钮点击信号的槽函数
 signals:
 
 private:
@@ -35,6 +40,8 @@ private:
     QPushButton *m_pPrivateChatPB;    // 私聊按钮，默认群聊
 
     OnlineUserWid *m_pOnlineUserW;    // 所有在线用户页面
+
+    QString m_strSearchName;          // 查找的用户的名字
 };
 
 #endif // FRIEND_H

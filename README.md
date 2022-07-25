@@ -15,7 +15,7 @@
 
 ## :two_hearts:学习笔记
 
-详细记录了开发的流程，如有错误，请您指正。
+详细记录了开发的流程，同时包含了开发过程中遇到的问题和解决方案。如有错误，请您指正。
 
 [LightInk2020的C++项目 (notion.site)](https://lightink2020.notion.site/lightink2020/C-26c2299de7a04180a1e04de71a356590)
 

@@ -21,16 +21,6 @@
        <pointsize>14</pointsize>
       </font>
      </property>
-     <item>
-      <property name="text">
-       <string>好友1</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>好友2</string>
-      </property>
-     </item>
     </widget>
    </item>
    <item>

@@ -3,7 +3,8 @@
 
 #include <QObject>
 #include <QSqlDatabase> // 连接数据库
-#include <QSqlQuery> // 数据库操作
+#include <QSqlQuery>    // 数据库操作
+#include <QStringList>
 
 class DBOperate : public QObject
 {
@@ -17,6 +18,9 @@ public:
     bool handleRegist(const char *name, const char *pwd); // 处理注册操作，写入数据库用户信息
     bool handleLogin(const char *name, const char *pwd);  // 处理登录操作
     bool handleOffline(const char *name);                 // 处理用户下线
+    QStringList handleOnlineUsers();                      // 处理查询所有在线用户
+    int handleSearchUser(const char *name);               // 处理查找用户，0存在不在线，1存在并在线，2不存在
+
 signals:
 
 public slots:
