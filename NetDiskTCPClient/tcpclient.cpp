@@ -95,6 +95,10 @@ void TcpClient::receiveMsg()
         if(0 == strcmp(pdu -> caData, LOGIN_OK))
         {
             // QMessageBox::information(this, "登录", LOGIN_OK);
+            char caName[32] = {'\0'};
+            strncpy(caName, pdu -> caData + 32, 32); // 设置已登录用户名
+            m_strName = caName;
+            qDebug() << "用户已登录：" << caName << " strName：" << m_strName;
             // 登录跳转
             OperateWidget::getInstance().show(); // 显示主操作页面
             this -> hide(); // 隐藏登陆页面
@@ -124,6 +128,44 @@ void TcpClient::receiveMsg()
         {
             QMessageBox::warning(this, "查找", OperateWidget::getInstance().getPFriend()->getStrSearchName() + SEARCH_USER_EMPTY);
         }
+        break;
+    }
+    case ENUM_MSG_TYPE_ADD_FRIEND_RESPOND: // 好友请求回复消息
+    {
+        QMessageBox::information(this, "添加好友", pdu -> caData);
+        break;
+    }
+    case ENUM_MSG_TYPE_ADD_FRIEND_REQUEST: // 处理服务器转发过来的好友申请消息
+    {
+        char sourceName[32]; // 获取发送方用户名
+        strncpy(sourceName, pdu -> caData + 32, 32);
+        int ret = QMessageBox::information(this, "好友申请", QString("%1 想添加您为好友，是否同意？").arg(sourceName),
+                                 QMessageBox::Yes, QMessageBox::No); // 后面两个参数是为QMessage默认支持两个按钮来设置枚举值
+        PDU* resPdu = mkPDU(0);
+
+        strncpy(resPdu -> caData, pdu -> caData, 32); // 被加好友者用户名
+        strncpy(resPdu -> caData + 32, pdu -> caData + 32, 32); // 加好友者用户名
+        // qDebug() << "同意加好友吗？" << resPdu -> caData << " " << resPdu -> caData + 32;
+        if(ret == QMessageBox::Yes) // 同意加好友
+        {
+            resPdu->uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_AGREE;
+        }
+        else
+        {
+            resPdu->uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_REJECT;
+        }
+        m_tcpSocket.write((char*)resPdu, resPdu -> uiPDULen); // 发送给服务器消息，由服务器写入数据库并转发给用户
+
+        break;
+    }
+    case ENUM_MSG_TYPE_ADD_FRIEND_AGREE: // 对方同意加好友
+    {
+        QMessageBox::information(this, "添加好友", QString("%1 已同意您的好友申请！").arg(pdu -> caData));
+        break;
+    }
+    case ENUM_MSG_TYPE_ADD_FRIEND_REJECT: // 对方拒绝加好友
+    {
+        QMessageBox::information(this, "添加好友", QString("%1 已拒绝您的好友申请！").arg(pdu -> caData));
         break;
     }
     default:
@@ -189,6 +231,16 @@ void TcpClient::on_regist_pb_clicked()
 void TcpClient::on_logout_pb_clicked()
 {
 
+}
+
+QString TcpClient::getStrName() const
+{
+    return m_strName;
+}
+
+void TcpClient::setStrName(const QString &strName)
+{
+    m_strName = strName;
 }
 
 QTcpSocket& TcpClient::getTcpSocket()

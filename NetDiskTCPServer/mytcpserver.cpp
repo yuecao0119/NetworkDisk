@@ -25,6 +25,25 @@ void MyTcpServer::incomingConnection(qintptr handle)
     connect(pTcpSocket, SIGNAL(offline(MyTcpSocket *)), this, SLOT(deleteSocket(MyTcpSocket *)));
 }
 
+bool MyTcpServer::forwardMsg(const QString caDesName, PDU *pdu)
+{
+    if(caDesName == NULL || pdu == NULL)
+    {
+        return false;
+    }
+    // 查找目标用户名的Socket
+    for(int i = 0; i < m_tcpSocketList.size(); ++ i)
+    {
+        if(caDesName == m_tcpSocketList.at(i) -> getStrName()) // 查找到
+        {
+            m_tcpSocketList.at(i)->write((char*)pdu, pdu -> uiPDULen); // 转发消息
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void MyTcpServer::deleteSocket(MyTcpSocket *mySocket)
 {
     // 遍历m_tcpSocketList并删除socket

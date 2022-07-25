@@ -1,6 +1,8 @@
 #include "onlineuserwid.h"
 #include "ui_onlineuserwid.h"
 #include <QDebug>
+#include "tcpclient.h"
+#include <QMessageBox>
 
 OnlineUserWid::OnlineUserWid(QWidget *parent) :
     QWidget(parent),
@@ -29,6 +31,28 @@ void OnlineUserWid::setOnlineUsers(PDU *pdu)
     {
         memcpy(caTmp, (char*)(pdu -> caMsg) + 32 * i, 32);
         // qDebug() << "在线用户：" << caTmp;
+
+        // 补充：不显示自己信息，防止之后添加自己为好友等操作错误
+        if(strcmp(caTmp, TcpClient::getInstance().getStrName().toStdString().c_str()) == 0)
+        {
+            continue;
+        }
         ui -> onlineuser_lw -> addItem(caTmp);
     }
+}
+
+// 添加好友按钮转到槽函数
+void OnlineUserWid::on_addfriend_pb_clicked()
+{
+    QString strAddName = ui -> onlineuser_lw -> currentItem()->text(); // 获得要添加好友用户名
+    QString strLoginName = TcpClient::getInstance().getStrName();           // 该用户自己用户名
+    PDU* pdu = mkPDU(0);
+
+    qDebug() << "on_addfriend_pb_clicked  " << strAddName << " " << strLoginName;
+    pdu -> uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_REQUEST;
+    memcpy(pdu->caData, strAddName.toStdString().c_str(), strAddName.size());
+    memcpy(pdu->caData + 32, strLoginName.toStdString().c_str(), strLoginName.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+    free(pdu);
+    pdu = NULL;
 }

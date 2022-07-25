@@ -8,15 +8,23 @@
 typedef unsigned int uint;
 
 // 定义响应消息
-#define REGIST_OK "regist ok"
+#define REGIST_OK "regist ok"                            // 注册
 #define REGIST_FAILED "regist failed"
 
-#define LOGIN_OK "login ok"
+#define LOGIN_OK "login ok"                              // 登录
 #define LOGIN_FAILED "login failed"
 
-#define SEARCH_USER_OK "search user ok"
+#define SEARCH_USER_OK "search user ok"                  // 查找
 #define SEARCH_USER_OFFLINE "user offline"
 #define SEARCH_USER_EMPTY "no such people"
+
+#define ADD_FRIEND_OK "add friend ok"                    // 添加好友
+#define ADD_FRIEND_OFFLINE "added friend offline"
+#define ADD_FRIEND_EMPTY "no such people"
+#define ADD_FRIEND_EXIST "added friend already exist"
+// 1对方存在在线，0对方存在不在线，2不存在，3已是好友，4请求错误
+
+#define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
 // 枚举方式，定义消息类型
 enum ENUM_MSG_TYPE
@@ -34,6 +42,12 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_SEARCH_USER_REQUEST,  // 查找用户请求
     ENUM_MSG_TYPE_SEARCH_USER_RESPOND,  // 查找用户响应
+
+    ENUM_MSG_TYPE_ADD_FRIEND_REQUEST,   // 添加好友请求
+    ENUM_MSG_TYPE_ADD_FRIEND_RESPOND,   // 添加好友响应
+
+    ENUM_MSG_TYPE_ADD_FRIEND_AGREE,    // 被添加好友消息回复同意
+    ENUM_MSG_TYPE_ADD_FRIEND_REJECT,    // 被添加好友消息回复拒绝
 
 //    ENUM_MSG_TYPE_REQUEST,
 //    ENUM_MSG_TYPE_RESPOND,

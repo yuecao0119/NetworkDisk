@@ -12,6 +12,7 @@ private:
 public:
     static MyTcpServer& getInstance(); // 实现单例模式获取静态对象的引用
     void incomingConnection(qintptr handle) override; // 判断何时有客户端接入并处理
+    bool forwardMsg(const QString caDesName, PDU *pdu); // 服务器转发给其他客户端消息
 
 public slots:
     void deleteSocket(MyTcpSocket *mySocket); // 捕获mytcpsocket删除Socket信号并处理，注意槽函数与信号参数一致

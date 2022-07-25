@@ -20,6 +20,9 @@ public:
     bool handleOffline(const char *name);                 // 处理用户下线
     QStringList handleOnlineUsers();                      // 处理查询所有在线用户
     int handleSearchUser(const char *name);               // 处理查找用户，0存在不在线，1存在并在线，2不存在
+    int handleAddFriend(const char *addedName, const char *sourceName); // 处理添加好友
+    bool handleAddFriendAgree(const char *addedName, const char *sourceName); // 处理同意好友申请
+    int getIdByUserName(const char *name);                    // 根据用户名获取用户id
 
 signals:
 

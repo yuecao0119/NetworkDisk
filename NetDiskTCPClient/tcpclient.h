@@ -22,6 +22,9 @@ public:
     static TcpClient& getInstance(); // 将TcpClient设置为单例模式，方便外部调用socket功能
     QTcpSocket& getTcpSocket();
 
+    QString getStrName() const;
+    void setStrName(const QString &strName);
+
 public slots: // 槽函数，主要用来处理信号
     void showConnect(); // 检测服务器是否连接成功
     void receiveMsg();  // 接收服务器数据
@@ -37,8 +40,9 @@ private slots:
 
 private:
     Ui::TcpClient *ui;
-    QString m_strIP; // 存储配置文件读取到的IP地址
-    quint16 m_usPort; // 无符号16位整型 存储配置文件的端口号
+    QString m_strIP;        // 存储配置文件读取到的IP地址
+    quint16 m_usPort;       // 无符号16位整型 存储配置文件的端口号
     QTcpSocket m_tcpSocket; // TCPSocket用来和服务器连接与交互
+    QString m_strName;      // 该客户端用户名
 };
 #endif // TCPCLIENT_H

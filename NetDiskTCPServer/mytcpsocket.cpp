@@ -1,4 +1,5 @@
 #include "mytcpsocket.h"
+#include "mytcpserver.h"
 
 MyTcpSocket::MyTcpSocket()
 {
@@ -55,7 +56,8 @@ PDU* handleLoginRequest(PDU* pdu, QString& m_strName)
     resPdu -> uiMsgType = ENUM_MSG_TYPE_LOGIN_RESPOND;
     if(ret)
     {
-        strcpy(resPdu -> caData, LOGIN_OK);
+        memcpy(resPdu -> caData, LOGIN_OK, 32);
+        memcpy(resPdu -> caData + 32, caName, 32); // 将登录后的用户名传回，便于tcpclient确认已经登陆的用户名
         // 在登陆成功时，记录Socket对应的用户名
         m_strName = caName;
         // qDebug() << "m_strName: " << m_strName;
@@ -64,7 +66,7 @@ PDU* handleLoginRequest(PDU* pdu, QString& m_strName)
     {
         strcpy(resPdu -> caData, LOGIN_FAILED);
     }
-    // qDebug() << resPdu -> uiMsgType << " " << resPdu ->caData;
+    qDebug() << "登录处理：" << resPdu -> uiMsgType << " " << resPdu ->caData << " " << resPdu ->caData + 32;
 
     return resPdu;
 }
@@ -114,6 +116,91 @@ PDU* handleSearchUserRequest(PDU* pdu)
     return resPdu;
 }
 
+// 处理添加好友请求
+PDU* handleAddFriendRequest(PDU* pdu)
+{
+    char addedName[32] = {'\0'};
+    char sourceName[32] = {'\0'};
+    // 拷贝读取的信息
+    strncpy(addedName, pdu -> caData, 32);
+    strncpy(sourceName, pdu -> caData + 32, 32);
+    qDebug() << "handleAddFriendRequest  " << addedName << " " << sourceName;
+    int iSearchUserStatus = DBOperate::getInstance().handleAddFriend(addedName, sourceName);
+    // 0对方存在不在线，1对方存在在线，2不存在，3已是好友，4请求错误
+    PDU* resPdu = NULL;
+
+    switch (iSearchUserStatus) {
+    case 0: // 0对方存在不在线
+    {
+        resPdu = mkPDU(0);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_RESPOND;
+        strcpy(resPdu -> caData, ADD_FRIEND_OFFLINE);
+        break;
+    }
+    case 1: // 1对方存在在线
+    {
+        // 需要转发给对方请求添加好友消息
+        MyTcpServer::getInstance().forwardMsg(addedName, pdu);
+
+        resPdu = mkPDU(0);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_RESPOND;
+        strcpy(resPdu -> caData, ADD_FRIEND_OK); // 表示加好友请求已发送
+        break;
+    }
+    case 2: // 2用户不存在
+    {
+        resPdu = mkPDU(0);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_RESPOND;
+        strcpy(resPdu -> caData, ADD_FRIEND_EMPTY);
+        break;
+    }
+    case 3: // 3已是好友
+    {
+        resPdu = mkPDU(0);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_RESPOND;
+        strcpy(resPdu -> caData, ADD_FRIEND_EXIST);
+        break;
+    }
+    case 4: // 4请求错误
+    {
+        resPdu = mkPDU(0);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_ADD_FRIEND_RESPOND;
+        strcpy(resPdu -> caData, UNKNOWN_ERROR);
+        break;
+    }
+    default:
+        break;
+    }
+
+    return resPdu;
+}
+
+// 同意加好友
+void handleAddFriendAgree(PDU* pdu)
+{
+    char addedName[32] = {'\0'};
+    char sourceName[32] = {'\0'};
+    // 拷贝读取的信息
+    strncpy(addedName, pdu -> caData, 32);
+    strncpy(sourceName, pdu -> caData + 32, 32);
+
+    // 将新的好友关系信息写入数据库
+    DBOperate::getInstance().handleAddFriendAgree(addedName, sourceName);
+
+    // 服务器需要转发给发送好友请求方其被同意的消息
+    MyTcpServer::getInstance().forwardMsg(sourceName, pdu);
+}
+
+// 拒绝加好友
+void handleAddFriendReject(PDU* pdu)
+{
+    char sourceName[32] = {'\0'};
+    // 拷贝读取的信息
+    strncpy(sourceName, pdu -> caData + 32, 32);
+    // 服务器需要转发给发送好友请求方其被拒绝的消息
+    MyTcpServer::getInstance().forwardMsg(sourceName, pdu);
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
@@ -146,6 +233,21 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_SEARCH_USER_REQUEST: // 查找用户请求
     {
         resPdu = handleSearchUserRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_ADD_FRIEND_REQUEST: // 添加好友请求
+    {
+        resPdu = handleAddFriendRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_ADD_FRIEND_AGREE: // 同意加好友
+    {
+        handleAddFriendAgree(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_ADD_FRIEND_REJECT: // 拒绝加好友
+    {
+        handleAddFriendReject(pdu);
         break;
     }
     default:
