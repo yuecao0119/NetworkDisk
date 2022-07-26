@@ -17,14 +17,18 @@ class Friend : public QWidget
     Q_OBJECT
 public:
     explicit Friend(QWidget *parent = nullptr);
-    void setOnlineUsers(PDU* pdu);    // 设置所有在线用户的信息
 
     QString getStrSearchName() const;
     void setStrSearchName(const QString &strSearchName);
 
+    void setOnlineUsers(PDU* pdu);    // 设置所有在线用户的信息
+    void updateFriendList(PDU *pdu);  // 刷新好友列表
+
 public slots:
     void showOrHideOnlineUserW();     // 处理显示/隐藏所有在线用户按钮点击信号的槽函数
     void searchUser();                // 处理查找用户按钮点击信号的槽函数
+    void flushFriendList();           // 刷新好友列表按钮点击信号的槽函数
+
 signals:
 
 private:

@@ -201,6 +201,27 @@ void handleAddFriendReject(PDU* pdu)
     MyTcpServer::getInstance().forwardMsg(sourceName, pdu);
 }
 
+// 刷新好友列表请求
+PDU* handleFlushFriendRequest(PDU* pdu)
+{
+    char caName[32] = {'\0'};
+
+    strncpy(caName, pdu -> caData, 32);
+
+    QStringList strList = DBOperate::getInstance().handleFlushFriendRequest(caName);
+    uint uiMsgLen = strList.size() / 2 * 36; // 36 char[32] 好友名字+ 4 int 在线状态
+
+    PDU* resPdu = mkPDU(uiMsgLen);
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_FLUSH_FRIEND_RESPOND;
+    for(int i = 0; i * 2 < strList.size(); ++ i)
+    {
+        strncpy((char*)(resPdu -> caMsg) + 36 * i, strList.at(i * 2).toStdString().c_str(), 32);
+        strncpy((char*)(resPdu -> caMsg) + 36 * i + 32, strList.at(i * 2 + 1).toStdString().c_str(), 4);
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
@@ -248,6 +269,11 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_ADD_FRIEND_REJECT: // 拒绝加好友
     {
         handleAddFriendReject(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_FLSUH_FRIEND_REQUEST: // 刷新好友请求
+    {
+        resPdu = handleFlushFriendRequest(pdu);
         break;
     }
     default:

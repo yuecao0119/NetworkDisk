@@ -101,6 +101,9 @@ void TcpClient::receiveMsg()
             qDebug() << "用户已登录：" << caName << " strName：" << m_strName;
             // 登录跳转
             OperateWidget::getInstance().show(); // 显示主操作页面
+            // 默认请求一次好友列表
+            OperateWidget::getInstance().getPFriend() -> flushFriendList();
+
             this -> hide(); // 隐藏登陆页面
         }
         else if(0 == strcmp(pdu -> caData, LOGIN_FAILED))
@@ -168,6 +171,11 @@ void TcpClient::receiveMsg()
         QMessageBox::information(this, "添加好友", QString("%1 已拒绝您的好友申请！").arg(pdu -> caData));
         break;
     }
+    case ENUM_MSG_TYPE_FLUSH_FRIEND_RESPOND: // 刷新好友响应
+    {
+        OperateWidget::getInstance().getPFriend()->updateFriendList(pdu);
+        break;
+    }
     default:
         break;
     }
@@ -189,7 +197,7 @@ void TcpClient::on_login_pb_clicked()
         // 拷贝用户名和密码信息到caData
         memcpy(pdu -> caData, strName.toStdString().c_str(), 32); // 由于数据库设定的32位，所以最多只拷贝前32位
         memcpy(pdu -> caData + 32, strPwd.toStdString().c_str(), 32);
-        qDebug() << pdu -> uiMsgType << " " << pdu -> caData << " " << pdu -> caData + 32;
+        // qDebug() << pdu -> uiMsgType << " " << pdu -> caData << " " << pdu -> caData + 32;
         m_tcpSocket.write((char*)pdu, pdu -> uiPDULen); // 发送消息
 
         // 释放空间
@@ -215,7 +223,7 @@ void TcpClient::on_regist_pb_clicked()
         // 拷贝用户名和密码信息到caData
         memcpy(pdu -> caData, strName.toStdString().c_str(), 32); // 由于数据库设定的32位，所以最多只拷贝前32位
         memcpy(pdu -> caData + 32, strPwd.toStdString().c_str(), 32);
-        qDebug() << pdu -> uiMsgType << " " << pdu -> caData << " " << pdu -> caData + 32;
+        // qDebug() << pdu -> uiMsgType << " " << pdu -> caData << " " << pdu -> caData + 32;
         m_tcpSocket.write((char*)pdu, pdu -> uiPDULen); // 发送消息
 
         // 释放空间
