@@ -176,6 +176,18 @@ void TcpClient::receiveMsg()
         OperateWidget::getInstance().getPFriend()->updateFriendList(pdu);
         break;
     }
+    case ENUM_MSG_TYPE_DELETE_FRIEND_RESPOND: // 删除好友响应
+    {
+        QMessageBox::information(this, "删除好友", pdu -> caData);
+        break;
+    }
+    case ENUM_MSG_TYPE_DELETE_FRIEND_REQUEST: // 处理服务器转发过来的删除好友请求
+    {
+        char sourceName[32]; // 获取发送方用户名
+        strncpy(sourceName, pdu -> caData + 32, 32);
+        QMessageBox::information(this, "删除好友", QString("%1 已删除与您的好友关系！").arg(sourceName));
+        break;
+    }
     default:
         break;
     }

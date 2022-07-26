@@ -7,7 +7,7 @@
 
 typedef unsigned int uint;
 
-// 定义响应消息
+// 定义响应消息 TODO 之后改为ENUM形式
 #define REGIST_OK "regist ok"                            // 注册
 #define REGIST_FAILED "regist failed"
 
@@ -23,6 +23,9 @@ typedef unsigned int uint;
 #define ADD_FRIEND_EMPTY "no such people"
 #define ADD_FRIEND_EXIST "added friend already exist"
 // 1对方存在在线，0对方存在不在线，2不存在，3已是好友，4请求错误
+
+#define DEL_FRIEND_OK "delete friend ok"                 // 删除好友
+#define DEL_FRIEND_FAILED "delete friend failed"
 
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
@@ -51,6 +54,9 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_FLSUH_FRIEND_REQUEST, // 刷新好友请求
     ENUM_MSG_TYPE_FLUSH_FRIEND_RESPOND, // 刷新好友响应
+
+    ENUM_MSG_TYPE_DELETE_FRIEND_REQUEST, // 删除好友请求
+    ENUM_MSG_TYPE_DELETE_FRIEND_RESPOND, // 删除好友响应
 
 //    ENUM_MSG_TYPE_REQUEST,
 //    ENUM_MSG_TYPE_RESPOND,

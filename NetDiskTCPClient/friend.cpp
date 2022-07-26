@@ -47,6 +47,9 @@ Friend::Friend(QWidget *parent) : QWidget(parent)
     // 绑定刷新好友列表按钮与对应事件
     connect(m_pFlushFriendPB, SIGNAL(clicked(bool)),
              this, SLOT(flushFriendList()));
+    // 绑定删除好友按钮与对应事件
+    connect(m_pDelFriendPB, SIGNAL(clicked(bool)),
+            this, SLOT(deleteFriend()));
 }
 
 void Friend::setOnlineUsers(PDU* pdu)
@@ -121,6 +124,26 @@ void Friend::flushFriendList()
     PDU* pdu = mkPDU(0);
     pdu -> uiMsgType = ENUM_MSG_TYPE_FLSUH_FRIEND_REQUEST;
     strncpy(pdu -> caData, strName.toStdString().c_str(), strName.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+    free(pdu);
+    pdu = NULL;
+}
+
+void Friend::deleteFriend()
+{
+    if(NULL == m_pFriendLW -> currentItem()) // 如果没有选中好友
+    {
+        return ;
+    }
+    QString friName = m_pFriendLW -> currentItem() -> text(); // 获得选中的好友用户名
+    friName = friName.split("\t")[0];
+    QString loginName = TcpClient::getInstance().getStrName(); // 登录用户用户名
+
+    qDebug() << friName;
+    PDU* pdu = mkPDU(0);
+    pdu -> uiMsgType = ENUM_MSG_TYPE_DELETE_FRIEND_REQUEST;
+    strncpy(pdu -> caData, friName.toStdString().c_str(), 32);
+    strncpy(pdu -> caData + 32, loginName.toStdString().c_str(), 32);
     TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
     free(pdu);
     pdu = NULL;
