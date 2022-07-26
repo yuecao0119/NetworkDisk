@@ -6,6 +6,7 @@
 #include "friend.h"
 #include "filesystem.h"
 #include <QStackedWidget>
+#include <QLabel>
 
 class OperateWidget : public QWidget
 {
@@ -14,11 +15,13 @@ public:
     explicit OperateWidget(QWidget *parent = nullptr);
     static OperateWidget &getInstance(); // 将operatewidget设计为单例模式
     Friend *getPFriend() const;
+    void setUserLabel(const char* name); // 设置登录用户信息的Label值
 
 signals:
 
 
 private:
+    QLabel *m_pUserLabel;       // 标识客户端登录用户信息
     QListWidget *m_pListWidget; // 组织主页面左侧常用功能（好友、文件按钮等）
     Friend *m_pFriend;          // 好友页面
     FileSystem *m_pFileSystem;  // 文件页面

@@ -206,7 +206,7 @@ int DBOperate::getIdByUserName(const char *name)
     }
 }
 
-QStringList DBOperate::handleFlushFriendRequest(const char *name)
+QStringList DBOperate::handleFlushFriend(const char *name)
 {
     QStringList strFriendList;
     strFriendList.clear(); // 清除内容

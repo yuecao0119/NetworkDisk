@@ -100,6 +100,7 @@ void TcpClient::receiveMsg()
             m_strName = caName;
             qDebug() << "用户已登录：" << caName << " strName：" << m_strName;
             // 登录跳转
+            OperateWidget::getInstance().setUserLabel(caName); // 设置主页面用户信息
             OperateWidget::getInstance().show(); // 显示主操作页面
             // 默认请求一次好友列表
             OperateWidget::getInstance().getPFriend() -> flushFriendList();
@@ -186,6 +187,40 @@ void TcpClient::receiveMsg()
         char sourceName[32]; // 获取发送方用户名
         strncpy(sourceName, pdu -> caData + 32, 32);
         QMessageBox::information(this, "删除好友", QString("%1 已删除与您的好友关系！").arg(sourceName));
+        break;
+    }
+    case ENUM_MSG_TYPE_PRIVATE_CHAT_RESPOND: // 私聊好友消息响应（发送消息是否成功）
+    {
+        if(strcmp(PRIVATE_CHAT_OFFLINE, pdu -> caData) == 0) // 发送消息失败
+        {
+            QMessageBox::information(this, "私聊", PRIVATE_CHAT_OFFLINE);
+        }
+        break;
+    }
+    case ENUM_MSG_TYPE_PRIVATE_CHAT_REQUEST: // 私聊好友消息请求（接收消息）
+    {
+        char sourceName[32]; // 获取发送方用户名
+        strncpy(sourceName, pdu -> caData + 32, 32);
+        PrivateChatWid *priChatW = OperateWidget::getInstance().getPFriend()->searchPriChatWid(sourceName);
+        if(NULL == priChatW)
+        {
+            priChatW = new PrivateChatWid;
+            priChatW -> setStrChatName(sourceName);
+            priChatW -> setStrLoginName(m_strName);
+            priChatW -> setPriChatTitle(sourceName);
+            OperateWidget::getInstance().getPFriend()->insertPriChatWidList(priChatW);
+        }
+        priChatW->updateShowMsgTE(pdu);
+        priChatW->show();
+        if(priChatW->isMinimized()) // 如果窗口被最小化了
+        {
+            priChatW->showNormal();
+        }
+        break;
+    }
+    case ENUM_MSG_TYPE_GROUP_CHAT_REQUEST: // 群发好友信息请求（接收消息）
+    {
+        OperateWidget::getInstance().getPFriend()->updateGroupShowMsgTE(pdu);
         break;
     }
     default:

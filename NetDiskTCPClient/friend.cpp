@@ -2,17 +2,20 @@
 
 #include "tcpclient.h"  // 不放在头文件，减少交叉引入
 #include <QInputDialog> // 一个内置输入框窗口
+#include <QMessageBox>
+#include "privatechatwid.h"
+
 
 Friend::Friend(QWidget *parent) : QWidget(parent)
 {
     m_pFriendLW = new QListWidget;
-    m_pInputMsgLE = new QLineEdit;
-    m_pShowMsgTE = new QTextEdit;
+    m_pGroupInputLE = new QLineEdit;
+    m_pGroupShowMsgTE = new QTextEdit;
     m_pDelFriendPB = new QPushButton("删除好友");
     m_pFlushFriendPB = new QPushButton("刷新好友");
     m_pSOrHOnlineUserPB = new QPushButton("所有在线用户");
     m_pSearchUserPB = new QPushButton("查找用户");
-    m_pSendMsgPB = new QPushButton("发送");
+    m_pGroupSendMsgPB = new QPushButton("发送");
     m_pPrivateChatPB = new QPushButton("私聊");
 
     m_pOnlineUserW = new OnlineUserWid;
@@ -24,10 +27,10 @@ Friend::Friend(QWidget *parent) : QWidget(parent)
     pLeftRightVBL -> addWidget(m_pSOrHOnlineUserPB);
     pLeftRightVBL -> addWidget(m_pSearchUserPB);
     QHBoxLayout *pRightDownHBL = new QHBoxLayout; // 右侧下方发送消息布局
-    pRightDownHBL -> addWidget(m_pInputMsgLE);
-    pRightDownHBL -> addWidget(m_pSendMsgPB);
+    pRightDownHBL -> addWidget(m_pGroupInputLE);
+    pRightDownHBL -> addWidget(m_pGroupSendMsgPB);
     QVBoxLayout *pRightVBL = new QVBoxLayout; // 右侧聊天布局
-    pRightVBL -> addWidget(m_pShowMsgTE);
+    pRightVBL -> addWidget(m_pGroupShowMsgTE);
     pRightVBL -> addLayout(pRightDownHBL);
     QHBoxLayout *pMainHBL = new QHBoxLayout; // 整体水平布局
     pMainHBL -> addWidget(m_pFriendLW);      // 左侧左部分好友列表
@@ -50,6 +53,12 @@ Friend::Friend(QWidget *parent) : QWidget(parent)
     // 绑定删除好友按钮与对应事件
     connect(m_pDelFriendPB, SIGNAL(clicked(bool)),
             this, SLOT(deleteFriend()));
+    // 私聊按钮
+    connect(m_pPrivateChatPB, SIGNAL(clicked(bool)),
+            this, SLOT(privateChat()));
+    // 群聊发送按钮
+    connect(m_pGroupSendMsgPB, SIGNAL(clicked(bool)),
+            this, SLOT(groupChatSendMsg()));
 }
 
 void Friend::setOnlineUsers(PDU* pdu)
@@ -147,6 +156,80 @@ void Friend::deleteFriend()
     TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
     free(pdu);
     pdu = NULL;
+}
+
+void Friend::privateChat()
+{
+    if(NULL == m_pFriendLW -> currentItem()) // 如果没有选中好友
+    {
+        return ;
+    }
+    QString friName = m_pFriendLW -> currentItem() -> text(); // 获得选中的好友用户名
+    friName = friName.split("\t")[0];
+    QString loginName = TcpClient::getInstance().getStrName(); // 登录用户用户名
+
+    PrivateChatWid *priChat = searchPriChatWid(friName.toStdString().c_str());
+
+    if(priChat == NULL) // 没找到该窗口，说明之前没有创建私聊窗口
+    {
+        priChat = new PrivateChatWid;
+        priChat -> setStrChatName(friName);
+        priChat -> setStrLoginName(loginName);
+        priChat -> setPriChatTitle(friName.toStdString().c_str());
+        m_priChatWidList.append(priChat); // 添加入该客户端私聊List
+    }
+    if(priChat->isHidden()) // 如果窗口被隐藏，则让其显示
+    {
+        priChat->show();
+    }
+    if(priChat -> isMinimized()) // 如果窗口被最小化了
+    {
+        // qDebug() << "窗口被最小化了";
+        priChat->showNormal();
+    }
+}
+
+PrivateChatWid *Friend::searchPriChatWid(const char *chatName)
+{
+    for (PrivateChatWid *ptr:m_priChatWidList)
+    {
+        if(ptr->strChatName() == chatName)
+        {
+            return ptr;
+        }
+    }
+    return NULL;
+}
+
+void Friend::insertPriChatWidList(PrivateChatWid *priChat)
+{
+    m_priChatWidList.append(priChat);
+}
+
+void Friend::groupChatSendMsg()
+{
+    QString strMsg = m_pGroupInputLE -> text();
+    if(strMsg.isEmpty())
+    {
+       QMessageBox::warning(this, "群聊", "发送信息不能为空！");
+       return ;
+    }
+    m_pGroupInputLE->clear(); // 清空输入框
+    m_pGroupShowMsgTE->append(QString("%1 : %2").arg(TcpClient::getInstance().getStrName()).arg(strMsg));
+
+    PDU* pdu = mkPDU(strMsg.size() + 1);
+    pdu -> uiMsgType = ENUM_MSG_TYPE_GROUP_CHAT_REQUEST;
+    strncpy(pdu -> caData, TcpClient::getInstance().getStrName().toStdString().c_str(), 32);
+    strncpy((char*)(pdu -> caMsg), strMsg.toStdString().c_str(), strMsg.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu->uiPDULen);
+    free(pdu);
+    pdu = NULL;
+}
+
+void Friend::updateGroupShowMsgTE(PDU *pdu)
+{
+    QString strMsg = QString("%1 : %2").arg(pdu->caData).arg((char*)pdu->caMsg);
+    m_pGroupShowMsgTE -> append(strMsg);
 }
 
 QString Friend::getStrSearchName() const

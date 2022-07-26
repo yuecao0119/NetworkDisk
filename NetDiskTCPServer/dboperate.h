@@ -23,7 +23,7 @@ public:
     int handleAddFriend(const char *addedName, const char *sourceName);       // 处理添加好友
     bool handleAddFriendAgree(const char *addedName, const char *sourceName); // 处理同意好友申请
     int getIdByUserName(const char *name);                // 根据用户名获取用户id
-    QStringList handleFlushFriendRequest(const char *name); // 处理刷新好友列表
+    QStringList handleFlushFriend(const char *name); // 处理刷新好友列表
     bool handleDeleteFriend(const char *deletedName, const char *sourceName); // 处理删除好友
 
 signals:

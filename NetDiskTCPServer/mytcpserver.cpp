@@ -58,10 +58,4 @@ void MyTcpServer::deleteSocket(MyTcpSocket *mySocket)
             break;
         }
     }
-    // 输出一下所有socket，看看是否删除成功  --- 测试
-//    for(int i = 0; i < m_tcpSocketList.size(); ++ i)
-//    {
-//        QString tmp = m_tcpSocketList.at(i) -> getStrName();
-//        qDebug() << tmp;
-//    }
 }

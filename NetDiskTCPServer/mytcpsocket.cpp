@@ -124,7 +124,7 @@ PDU* handleAddFriendRequest(PDU* pdu)
     // 拷贝读取的信息
     strncpy(addedName, pdu -> caData, 32);
     strncpy(sourceName, pdu -> caData + 32, 32);
-    qDebug() << "handleAddFriendRequest  " << addedName << " " << sourceName;
+    // qDebug() << "handleAddFriendRequest  " << addedName << " " << sourceName;
     int iSearchUserStatus = DBOperate::getInstance().handleAddFriend(addedName, sourceName);
     // 0对方存在不在线，1对方存在在线，2不存在，3已是好友，4请求错误
     PDU* resPdu = NULL;
@@ -208,7 +208,7 @@ PDU* handleFlushFriendRequest(PDU* pdu)
 
     strncpy(caName, pdu -> caData, 32);
 
-    QStringList strList = DBOperate::getInstance().handleFlushFriendRequest(caName);
+    QStringList strList = DBOperate::getInstance().handleFlushFriend(caName);
     uint uiMsgLen = strList.size() / 2 * 36; // 36 char[32] 好友名字+ 4 int 在线状态
 
     PDU* resPdu = mkPDU(uiMsgLen);
@@ -248,6 +248,43 @@ PDU* handleDeleteFriendRequest(PDU* pdu)
     MyTcpServer::getInstance().forwardMsg(deletedName, pdu);
 
     return resPdu;
+}
+
+// 私聊发送消息请求
+PDU* handlePrivateChatRequest(PDU* pdu)
+{
+    char chatedName[32] = {'\0'};
+    char sourceName[32] = {'\0'};
+    // 拷贝读取的信息
+    strncpy(chatedName, pdu -> caData, 32);
+    strncpy(sourceName, pdu -> caData + 32, 32);
+    qDebug() << "handlePrivateChatRequest  " << chatedName << " " << sourceName;
+
+    PDU* resPdu = NULL;
+
+    // 转发给对方消息  0对方存在不在线，1对方存在在线
+    bool ret = MyTcpServer::getInstance().forwardMsg(chatedName, pdu);
+
+    // 发送失败则给发送者消息
+    if(!ret)// 0对方不在线
+    {
+        resPdu = mkPDU(0);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_PRIVATE_CHAT_RESPOND;
+        strcpy(resPdu -> caData, PRIVATE_CHAT_OFFLINE);
+    }
+
+    return resPdu;
+}
+
+// 群聊请求处理
+void handleGroupChatRequest(PDU* pdu)
+{
+    QStringList strList = DBOperate::getInstance().handleFlushFriend(pdu->caData); // 查询请求，查询数据库所有在线用户
+
+    for(QString strName:strList)
+    {
+        MyTcpServer::getInstance().forwardMsg(strName, pdu);
+    }
 }
 
 void MyTcpSocket::receiveMsg()
@@ -307,6 +344,16 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_DELETE_FRIEND_REQUEST: // 删除好友请求
     {
         resPdu = handleDeleteFriendRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_PRIVATE_CHAT_REQUEST:  // 私聊请求
+    {
+        resPdu = handlePrivateChatRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_GROUP_CHAT_REQUEST:   // 群聊请求
+    {
+        handleGroupChatRequest(pdu);
         break;
     }
     default:

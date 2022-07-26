@@ -3,6 +3,7 @@ release/friend.o
 release/main.o
 release/onlineuserwid.o
 release/operatewidget.o
+release/privatechatwid.o
 release/protocol.o
 release/tcpclient.o
 release/qrc_config.o
@@ -10,4 +11,5 @@ release/moc_filesystem.o
 release/moc_friend.o
 release/moc_onlineuserwid.o
 release/moc_operatewidget.o
+release/moc_privatechatwid.o
 release/moc_tcpclient.o
