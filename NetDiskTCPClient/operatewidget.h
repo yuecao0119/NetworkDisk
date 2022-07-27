@@ -16,6 +16,7 @@ public:
     static OperateWidget &getInstance(); // 将operatewidget设计为单例模式
     Friend *getPFriend() const;
     void setUserLabel(const char* name); // 设置登录用户信息的Label值
+    FileSystem *getPFileSystem() const;
 
 signals:
 

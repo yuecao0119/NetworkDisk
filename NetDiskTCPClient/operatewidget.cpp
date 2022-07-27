@@ -45,3 +45,8 @@ void OperateWidget::setUserLabel(const char *name)
     m_pUserLabel->setText(name);
 }
 
+FileSystem *OperateWidget::getPFileSystem() const
+{
+    return m_pFileSystem;
+}
+

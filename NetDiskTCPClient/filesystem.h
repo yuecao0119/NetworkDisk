@@ -6,15 +6,18 @@
 #include <QPushButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include "protocol.h"
 
 class FileSystem : public QWidget
 {
     Q_OBJECT
 public:
     explicit FileSystem(QWidget *parent = nullptr);
+    void updateFileList(PDU* pdu);
 
 public slots:
     void createDir();  // 创建文件夹按钮槽函数
+    void flushDir();   // 刷新文件夹按钮槽函数
 
 signals:
 

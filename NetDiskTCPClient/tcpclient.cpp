@@ -232,6 +232,11 @@ void TcpClient::receiveMsg()
         QMessageBox::information(this, "创建文件夹", pdu -> caData);
         break;
     }
+    case ENUM_MSG_TYPE_FLUSH_DIR_RESPOND: // 刷新文件夹响应
+    {
+        OperateWidget::getInstance().getPFileSystem()->updateFileList(pdu);
+        break;
+    }
     default:
         break;
     }
