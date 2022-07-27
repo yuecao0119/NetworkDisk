@@ -34,8 +34,11 @@ typedef unsigned int uint;
 #define CREATE_DIR_OK "create dir ok"                    // 新建文件夹
 #define CREATE_DIR_EXIST "created dir already exist"
 
-#define FLUSH_DIR_OK "flush dir ok"                    // 刷新文件夹
+#define FLUSH_DIR_OK "flush dir ok"                      // 刷新文件夹
 #define FLUSH_DIR_FAILED "flush dir failed"
+
+#define DELETE_FILE_OK "delete file ok"                  // 删除文件夹
+#define DELETE_FILE_FAILED "delete file failed"
 
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
@@ -81,6 +84,9 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_FLUSH_DIR_REQUEST, // 刷新文件夹请求
     ENUM_MSG_TYPE_FLUSH_DIR_RESPOND, // 刷新文件夹回复
+
+    ENUM_MSG_TYPE_DELETE_FILE_REQUEST, // 刷新文件夹请求
+    ENUM_MSG_TYPE_DELETE_FILE_RESPOND, // 刷新文件夹回复
 
     ENUM_MSG_TYPE_MAX = 0x00ffffff, // uint最大值 0xffffffff
 };

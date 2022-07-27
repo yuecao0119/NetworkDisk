@@ -106,7 +106,8 @@ void TcpClient::receiveMsg()
             // 登录跳转
             OperateWidget::getInstance().setUserLabel(caName); // 设置主页面用户信息
             OperateWidget::getInstance().show(); // 显示主操作页面
-            // 默认请求一次好友列表
+            // 默认 获取文件列表 请求好友列表
+            OperateWidget::getInstance().getPFileSystem() -> flushDir();
             OperateWidget::getInstance().getPFriend() -> flushFriendList();
 
             this -> hide(); // 隐藏登陆页面
@@ -235,6 +236,11 @@ void TcpClient::receiveMsg()
     case ENUM_MSG_TYPE_FLUSH_DIR_RESPOND: // 刷新文件夹响应
     {
         OperateWidget::getInstance().getPFileSystem()->updateFileList(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_DELETE_FILE_RESPOND: // 删除文件或文件夹响应
+    {
+        QMessageBox::information(this, "删除文件", pdu -> caData);
         break;
     }
     default:

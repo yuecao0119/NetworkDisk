@@ -374,6 +374,48 @@ PDU* handleFlushDirRequest(PDU* pdu)
     return resPdu;
 }
 
+// 删除文件或文件夹处理
+PDU* handleDelFileOrDirRequest(PDU* pdu)
+{
+    PDU* resPdu = mkPDU(0);
+    char strDelPath[pdu -> uiMsgLen];
+    memcpy(strDelPath, (char*)pdu -> caMsg, pdu -> uiMsgLen);
+    qDebug() << "删除文件：" << strDelPath;
+    QDir dir;
+
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_DELETE_FILE_RESPOND;
+    if(!dir.exists(strDelPath)) // 路径不存在
+    {
+        strncpy(resPdu -> caData, PATH_NOT_EXIST, 32);
+    }
+    else
+    {
+        bool ret = false;
+
+        QFileInfo fileInfo(strDelPath);
+        if(fileInfo.isDir()) // 是文件目录
+        {
+            dir.setPath(strDelPath);
+            ret = dir.removeRecursively();
+        }
+        else if(fileInfo.isFile())
+        {
+            ret = dir.remove(strDelPath);
+        }
+        if(ret)
+        {
+            strncpy(resPdu -> caData, DELETE_FILE_OK, 32);
+        }
+        else
+        {
+            strncpy(resPdu -> caData, DELETE_FILE_FAILED, 32);
+        }
+    }
+    qDebug() << resPdu -> caData;
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
@@ -451,6 +493,11 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_FLUSH_DIR_REQUEST: // 刷新文件夹请求
     {
         resPdu = handleFlushDirRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_DELETE_FILE_REQUEST: // 删除文件请求
+    {
+        resPdu = handleDelFileOrDirRequest(pdu);
         break;
     }
     default:
