@@ -13,6 +13,9 @@ class FileSystem : public QWidget
 public:
     explicit FileSystem(QWidget *parent = nullptr);
 
+public slots:
+    void createDir();  // 创建文件夹按钮槽函数
+
 signals:
 
 private:

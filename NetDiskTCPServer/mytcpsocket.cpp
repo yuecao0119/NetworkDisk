@@ -1,5 +1,6 @@
 #include "mytcpsocket.h"
 #include "mytcpserver.h"
+#include <QDir> // 操作文件夹的库
 
 MyTcpSocket::MyTcpSocket()
 {
@@ -30,8 +31,12 @@ PDU* handleRegistRequest(PDU* pdu)
     if(ret)
     {
         strcpy(resPdu -> caData, REGIST_OK);
+        // 注册成功，为新用户按用户名创建文件夹
+        QDir dir;
+        ret = dir.mkdir(QString("%1/%2").arg(MyTcpServer::getInstance().getStrRootPath()).arg(caName));
+        qDebug() << "创建新用户文件夹 " << ret;
     }
-    else
+    if(!ret)
     {
         strcpy(resPdu -> caData, REGIST_FAILED);
     }
@@ -52,20 +57,27 @@ PDU* handleLoginRequest(PDU* pdu, QString& m_strName)
     bool ret = DBOperate::getInstance().handleLogin(caName, caPwd); // 处理请求，插入数据库
 
     // 响应客户端
-    PDU *resPdu = mkPDU(0); // 响应消息
-    resPdu -> uiMsgType = ENUM_MSG_TYPE_LOGIN_RESPOND;
+    PDU *resPdu = NULL; // 响应消息
     if(ret)
     {
+        QString strUserRootPath = QString("%1/%2")
+                .arg(MyTcpServer::getInstance().getStrRootPath()).arg(caName); // 用户文件系统根目录
+        qDebug() << "登录用户的路径：" << strUserRootPath;
+        resPdu = mkPDU(strUserRootPath.size() + 1);
         memcpy(resPdu -> caData, LOGIN_OK, 32);
         memcpy(resPdu -> caData + 32, caName, 32); // 将登录后的用户名传回，便于tcpclient确认已经登陆的用户名
         // 在登陆成功时，记录Socket对应的用户名
         m_strName = caName;
         // qDebug() << "m_strName: " << m_strName;
+        // 返回用户的根目录
+        strncpy((char*)resPdu -> caMsg, strUserRootPath.toStdString().c_str(), strUserRootPath.size() + 1);
     }
     else
     {
+        resPdu = mkPDU(0);
         strcpy(resPdu -> caData, LOGIN_FAILED);
     }
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_LOGIN_RESPOND;
     qDebug() << "登录处理：" << resPdu -> uiMsgType << " " << resPdu ->caData << " " << resPdu ->caData + 32;
 
     return resPdu;
@@ -287,6 +299,40 @@ void handleGroupChatRequest(PDU* pdu)
     }
 }
 
+// 创建文件夹请求处理
+PDU* handleCreateDirRequest(PDU* pdu)
+{
+    char caDirName[32];
+    char caCurPath[pdu -> uiMsgLen];
+    strncpy(caDirName, pdu -> caData, 32);
+    strncpy(caCurPath, (char*)pdu -> caMsg, pdu -> uiMsgLen);
+
+    QString strDir = QString("%1/%2").arg(caCurPath).arg(caDirName);
+    QDir dir;
+    PDU *resPdu = mkPDU(0);
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_CREATE_DIR_RESPOND;
+
+    qDebug() << "创建文件夹：" << strDir;
+    if(dir.exists(caCurPath)) // 路径存在
+    {
+        if(dir.exists(strDir)) // 文件夹已经存在
+        {
+            strncpy(resPdu -> caData, CREATE_DIR_EXIST, 32);
+        }
+        else
+        {
+            dir.mkdir(strDir); // 创建文件夹
+            strncpy(resPdu -> caData, CREATE_DIR_OK, 32);
+        }
+    }
+    else // 路径不存在
+    {
+        strncpy(resPdu -> caData, PATH_NOT_EXIST, 32);
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
@@ -346,14 +392,19 @@ void MyTcpSocket::receiveMsg()
         resPdu = handleDeleteFriendRequest(pdu);
         break;
     }
-    case ENUM_MSG_TYPE_PRIVATE_CHAT_REQUEST:  // 私聊请求
+    case ENUM_MSG_TYPE_PRIVATE_CHAT_REQUEST: // 私聊请求
     {
         resPdu = handlePrivateChatRequest(pdu);
         break;
     }
-    case ENUM_MSG_TYPE_GROUP_CHAT_REQUEST:   // 群聊请求
+    case ENUM_MSG_TYPE_GROUP_CHAT_REQUEST: // 群聊请求
     {
         handleGroupChatRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_CREATE_DIR_REQUEST: // 创建文件夹请求
+    {
+        resPdu = handleCreateDirRequest(pdu);
         break;
     }
     default:

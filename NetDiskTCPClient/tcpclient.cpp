@@ -97,6 +97,10 @@ void TcpClient::receiveMsg()
             // QMessageBox::information(this, "登录", LOGIN_OK);
             char caName[32] = {'\0'};
             strncpy(caName, pdu -> caData + 32, 32); // 设置已登录用户名
+            // 设置用户根目录和当前目录
+            m_strRootPath = QString((char*)pdu -> caMsg);
+            qDebug() << "用户根目录 " << m_strRootPath;
+            m_strCurPath = m_strRootPath;
             m_strName = caName;
             qDebug() << "用户已登录：" << caName << " strName：" << m_strName;
             // 登录跳转
@@ -223,6 +227,11 @@ void TcpClient::receiveMsg()
         OperateWidget::getInstance().getPFriend()->updateGroupShowMsgTE(pdu);
         break;
     }
+    case ENUM_MSG_TYPE_CREATE_DIR_RESPOND: // 创建文件夹响应
+    {
+        QMessageBox::information(this, "创建文件夹", pdu -> caData);
+        break;
+    }
     default:
         break;
     }
@@ -286,6 +295,26 @@ void TcpClient::on_regist_pb_clicked()
 void TcpClient::on_logout_pb_clicked()
 {
 
+}
+
+QString TcpClient::getStrRootPath() const
+{
+    return m_strRootPath;
+}
+
+void TcpClient::setStrRootPath(const QString &strRootPath)
+{
+    m_strRootPath = strRootPath;
+}
+
+QString TcpClient::getStrCurPath() const
+{
+    return m_strCurPath;
+}
+
+void TcpClient::setStrCurPath(const QString &strCurPath)
+{
+    m_strCurPath = strCurPath;
 }
 
 QString TcpClient::getStrName() const

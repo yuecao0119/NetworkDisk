@@ -25,6 +25,12 @@ public:
     QString getStrName() const;
     void setStrName(const QString &strName);
 
+    QString getStrCurPath() const;
+    void setStrCurPath(const QString &strCurPath);
+
+    QString getStrRootPath() const;
+    void setStrRootPath(const QString &strRootPath);
+
 public slots: // 槽函数，主要用来处理信号
     void showConnect(); // 检测服务器是否连接成功
     void receiveMsg();  // 接收服务器数据
@@ -43,6 +49,9 @@ private:
     QString m_strIP;        // 存储配置文件读取到的IP地址
     quint16 m_usPort;       // 无符号16位整型 存储配置文件的端口号
     QTcpSocket m_tcpSocket; // TCPSocket用来和服务器连接与交互
+
     QString m_strName;      // 该客户端用户名
+    QString m_strRootPath;  // 用户根目录
+    QString m_strCurPath;   // 当前目录
 };
 #endif // TCPCLIENT_H

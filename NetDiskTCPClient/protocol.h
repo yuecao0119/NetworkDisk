@@ -14,20 +14,26 @@ typedef unsigned int uint;
 #define LOGIN_OK "login ok"                              // 登录
 #define LOGIN_FAILED "login failed"
 
+// 好友操作
 #define SEARCH_USER_OK "search user ok"                  // 查找
 #define SEARCH_USER_OFFLINE "user offline"
 #define SEARCH_USER_EMPTY "no such people"
 
-#define ADD_FRIEND_OK "add friend ok"                    // 添加好友
+#define ADD_FRIEND_OK "add friend ok"                    // 添加好友 1对方存在在线，0对方存在不在线，2不存在，3已是好友，4请求错误
 #define ADD_FRIEND_OFFLINE "added friend offline"
 #define ADD_FRIEND_EMPTY "no such people"
 #define ADD_FRIEND_EXIST "added friend already exist"
-// 1对方存在在线，0对方存在不在线，2不存在，3已是好友，4请求错误
 
 #define DEL_FRIEND_OK "delete friend ok"                 // 删除好友
 #define DEL_FRIEND_FAILED "delete friend failed"
 
 #define PRIVATE_CHAT_OFFLINE "the friend offline"        // 私聊好友
+
+// 文件操作
+#define PATH_NOT_EXIST "path does not exist"             // 文件路径不存在
+#define CREATE_DIR_OK "create dir ok"                    // 新建文件夹
+#define CREATE_DIR_EXIST "created dir already exist"
+
 
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
@@ -42,6 +48,7 @@ enum ENUM_MSG_TYPE
     ENUM_MSG_TYPE_LOGIN_REQUEST,        // 登录请求
     ENUM_MSG_TYPE_LOGIN_RESPOND,        // 登录回复
 
+    // 好友操作
     ENUM_MSG_TYPE_ONLINE_USERS_REQUEST, // 所有在线用户请求
     ENUM_MSG_TYPE_ONLINE_USERS_RESPOND, // 所有在线用户响应
 
@@ -65,6 +72,10 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_GROUP_CHAT_REQUEST, // 群聊请求
     ENUM_MSG_TYPE_GROUP_CHAT_RESPOND, // 群聊回复
+
+    // 文件操作
+    ENUM_MSG_TYPE_CREATE_DIR_REQUEST, // 新建文件夹请求
+    ENUM_MSG_TYPE_CREATE_DIR_RESPOND, // 新建文件夹回复
 
 //    ENUM_MSG_TYPE_REQUEST,
 //    ENUM_MSG_TYPE_RESPOND,
