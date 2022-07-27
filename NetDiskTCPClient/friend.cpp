@@ -13,7 +13,7 @@ Friend::Friend(QWidget *parent) : QWidget(parent)
     m_pGroupShowMsgTE = new QTextEdit;
     m_pDelFriendPB = new QPushButton("删除好友");
     m_pFlushFriendPB = new QPushButton("刷新好友");
-    m_pSOrHOnlineUserPB = new QPushButton("所有在线用户");
+    m_pSOrHOnlineUserPB = new QPushButton("在线用户");
     m_pSearchUserPB = new QPushButton("查找用户");
     m_pGroupSendMsgPB = new QPushButton("发送");
     m_pPrivateChatPB = new QPushButton("私聊");
