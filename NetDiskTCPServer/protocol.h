@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h> // Unix库函数，包含了read等系统服务函数
 #include <string.h>
+#include <QFile>
 
 typedef unsigned int uint;
 
@@ -48,6 +49,10 @@ typedef unsigned int uint;
 
 #define PRE_DIR_OK "return pre dir ok"                   // 上一目录
 #define PRE_DIR_FAILED "return pre dir failed"
+
+#define UPLOAD_FILE_OK "upload file ok"                   // 上一目录
+#define UPLOAD_FILE_FAILED "upload file failed"
+#define UPLOAD_FILE_START "start upload file data"
 
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
@@ -106,6 +111,9 @@ enum ENUM_MSG_TYPE
     ENUM_MSG_TYPE_PRE_DIR_REQUEST, // 上一文件夹请求
     ENUM_MSG_TYPE_PRE_DIR_RESPOND, // 上一文件夹回复
 
+    ENUM_MSG_TYPE_UPLOAD_FILE_REQUEST, // 上传文件请求
+    ENUM_MSG_TYPE_UPLOAD_FILE_RESPOND, // 上传文件回复
+
     ENUM_MSG_TYPE_MAX = 0x00ffffff, // uint最大值 0xffffffff
 };
 
@@ -128,6 +136,15 @@ struct FileInfo
     bool bIsDir;         // 文件类型，是否为文件夹
     long long uiSize;         // 文件大小
     char caTime[128];    // 修改时间
+};
+
+// 传输文件信息
+struct TransFile
+{
+    QFile file; // 上传的文件
+    qint64 iTotalSize; // 文件总大小
+    qint64 iReceivedSize; // 已接收大小
+    bool bTransform; // 是否正在传输文件
 };
 
 #endif // PROTOCOL_H

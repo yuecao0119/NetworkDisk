@@ -1,6 +1,7 @@
 #ifndef MYTCPSOCKET_H
 #define MYTCPSOCKET_H
 
+#include <QFile>
 #include <QTcpSocket>
 #include "protocol.h"  // 服务器需要按照相同协议形式处理数据
 #include "dboperate.h" // 操作数据库
@@ -21,6 +22,9 @@ public slots:
 
 private:
     QString m_strName; // 用户名，为了能区分该Socket属于哪个用户
+
+    TransFile* m_uploadFile; // 传输的文件信息
+
 };
 
 #endif // MYTCPSOCKET_H

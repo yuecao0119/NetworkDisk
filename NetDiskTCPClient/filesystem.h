@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include "protocol.h"
+#include <QTimer>
 
 class FileSystem : public QWidget
 {
@@ -26,6 +27,9 @@ public slots:
     void renameFile(); // 重命名文件或文件夹槽函数
     void entryDir(const QModelIndex &index);   // 双击进入文件夹的槽函数
     void returnPreDir(); // 返回上一目录
+    void uploadFile();  // 上传文件请求
+    void startTimer(); // 开始定时器
+    void uploadFileData(); // 上传文件实际数据
 
 signals:
 
@@ -42,7 +46,10 @@ private:
     QPushButton *m_pDownloadFilePB; // 下载文件
     QPushButton *m_pShareFilePB;    // 分享文件
 
-    QString m_strTryEntryDir;         // 临时记录想要进入的目录，如进入成功更新m_strCurPath
+    QString m_strTryEntryDir;       // 临时记录想要进入的目录，如进入成功更新m_strCurPath
+
+    QString m_strUploadFilePath;    // 上传文件的文件路径
+    QTimer *m_pTimer;               // 定时器，为了间隔开文件上传时间
 };
 
 #endif // FILESYSTEM_H

@@ -5,6 +5,9 @@
 
 MyTcpSocket::MyTcpSocket()
 {
+    m_uploadFile = new TransFile;
+    m_uploadFile->bTransform = false; // 默认不是在上传文件
+
     connect(this, SIGNAL(readyRead()), // 当接收到客户端的数据时，服务器会发送readyRead()信号
             this, SLOT(receiveMsg())); // 需要由服务器的相应receiveMsg槽函数进行处理
     connect(this, SIGNAL(disconnected()), this, SLOT(handleClientOffline())); // 关联Socket连接断开与客户端下线处理槽函数
@@ -522,8 +525,84 @@ PDU* handlePreDirRequest(PDU* pdu)
     return resPdu;
 }
 
+// 上传文件请求处理
+PDU* handleUploadFileRequest(PDU* pdu, TransFile* transFile)
+{
+    char caCurPath[pdu -> uiMsgLen];
+    char caFileName[32] = {'\0'};
+    qint64 fileSize = 0;
+
+    strncpy(caCurPath, (char*)pdu -> caMsg, pdu -> uiMsgLen);
+    sscanf(pdu -> caData, "%s %lld", caFileName, &fileSize);
+    QString strFilePath = QString("%1/%2").arg(caCurPath).arg(caFileName); // 文件路径
+    qDebug() << "上传文件路径：" << strFilePath;
+
+    PDU* resPdu = mkPDU(0);
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_UPLOAD_FILE_RESPOND;
+
+    transFile->file.setFileName(strFilePath); // 设置要上传的文件名
+    if(transFile->file.open(QIODevice::WriteOnly)) // 以只写的方式打开文件，文件如果不存在会自动创建
+    {
+        transFile->bTransform = true; // 正在上传文件状态
+        transFile->iTotalSize = fileSize;
+        transFile->iReceivedSize = 0;
+
+        memcpy(resPdu -> caData, UPLOAD_FILE_START, 32);
+    }
+    else // 打开文件失败
+    {
+        memcpy(resPdu -> caData, UPLOAD_FILE_FAILED, 32);
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
+    // 所处状态是接收文件
+    if(m_uploadFile->bTransform)
+    {
+        // 接收数据
+        QByteArray baBuffer = this -> readAll();
+        m_uploadFile->file.write(baBuffer); // 文件在上一个请求已经打开了
+        m_uploadFile->iReceivedSize += baBuffer.size();
+        PDU* resPdu = NULL;
+
+        qDebug() << "上传文件中：" << m_uploadFile->iReceivedSize;
+
+        if(m_uploadFile->iReceivedSize == m_uploadFile->iTotalSize)
+        {
+            m_uploadFile->file.close(); // 关闭文件
+            m_uploadFile->bTransform = false;
+
+            resPdu = mkPDU(0);
+            resPdu -> uiMsgType = ENUM_MSG_TYPE_UPLOAD_FILE_RESPOND;
+            strncpy(resPdu -> caData, UPLOAD_FILE_OK, 32);
+        }
+        else if(m_uploadFile -> iReceivedSize > m_uploadFile->iTotalSize)
+        {
+            m_uploadFile->file.close(); // 关闭文件
+            m_uploadFile->bTransform = false;
+
+            resPdu = mkPDU(0);
+            resPdu -> uiMsgType = ENUM_MSG_TYPE_UPLOAD_FILE_RESPOND;
+            strncpy(resPdu -> caData, UPLOAD_FILE_FAILED, 32);
+        }
+
+        // 响应客户端
+        if(NULL != resPdu)
+        {
+            // qDebug() << resPdu -> uiMsgType << " " << resPdu ->caData;
+            this -> write((char*)resPdu, resPdu -> uiPDULen);
+            // 释放空间
+            free(resPdu);
+            resPdu = NULL;
+        }
+
+        return ;
+    }
+
+    // 所处状态不是接收文件，接收到的是非文件传输的请求
     // qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
     uint uiPDULen = 0;
     this -> read((char*)&uiPDULen, sizeof(uint)); // 先读取uint大小的数据，首个uint正是总数据大小
@@ -619,6 +698,11 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_PRE_DIR_REQUEST: // 上一目录请求
     {
         resPdu = handlePreDirRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_UPLOAD_FILE_REQUEST: // 上一目录请求
+    {
+        resPdu = handleUploadFileRequest(pdu, m_uploadFile);
         break;
     }
     default:

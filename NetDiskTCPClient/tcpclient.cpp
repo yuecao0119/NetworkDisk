@@ -288,6 +288,22 @@ void TcpClient::receiveMsg()
         }
         break;
     }
+    case ENUM_MSG_TYPE_UPLOAD_FILE_RESPOND: // 上传文件响应
+    {
+        if(strcmp(UPLOAD_FILE_START, pdu -> caData) == 0) // 开始上传文件数据内容
+        {
+            OperateWidget::getInstance().getPFileSystem()->startTimer();
+        }
+        else if(strcmp(UPLOAD_FILE_OK, pdu -> caData) == 0) // 上传文件成功
+        {
+            QMessageBox::information(this, "上传文件", pdu -> caData);
+        }
+        else if(strcmp(UPLOAD_FILE_FAILED, pdu -> caData) == 0) // 上传失败
+        {
+            QMessageBox::warning(this, "上传文件", pdu -> caData);
+        }
+        break;
+    }
     default:
         break;
     }
