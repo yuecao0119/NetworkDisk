@@ -356,6 +356,7 @@ PDU* handleFlushDirRequest(PDU* pdu)
 
         resPdu = mkPDU(sizeof(FileInfo) * iFileNum);
         FileInfo *pFileInfo = NULL; // 创建一个文件信息结构体指针，方便之后遍历PDU空间来赋值
+        strncpy(resPdu -> caData, FLUSH_DIR_OK, 32);
 
         for(int i = 0; i < iFileNum; ++ i)
         {
@@ -457,7 +458,6 @@ PDU* handleEntryDirRequest(PDU* pdu)
     {
         resPdu = mkPDU(0);
         strncpy(resPdu -> caData, PATH_NOT_EXIST, 32);
-        resPdu -> uiMsgType = ENUM_MSG_TYPE_ENTRY_DIR_RESPOND;
     }
     else // 存在
     {
@@ -466,12 +466,57 @@ PDU* handleEntryDirRequest(PDU* pdu)
         {
             resPdu = mkPDU(0);
             strncpy(resPdu -> caData, ENTRY_DIR_FAILED, 32);
-            resPdu -> uiMsgType = ENUM_MSG_TYPE_ENTRY_DIR_RESPOND;
         }
         else
         {
             resPdu = handleFlushDirRequest(pdu); // 通过该函数获取文件夹下内容
         }
+    }
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_ENTRY_DIR_RESPOND;
+    qDebug() << "1 resPdu -> caData ：" << resPdu -> caData;
+    if(strcmp(resPdu -> caData, FLUSH_DIR_OK) == 0)
+    {
+        strncpy(resPdu -> caData, ENTRY_DIR_OK, 32);
+        qDebug() << "2 resPdu -> caData ：" << resPdu -> caData;
+    }
+    else
+    {
+        strncpy(resPdu -> caData, ENTRY_DIR_FAILED, 32);
+        qDebug() << "2 resPdu -> caData ：" << resPdu -> caData;
+    }
+
+    return resPdu;
+}
+
+// 返回上一目录请求
+PDU* handlePreDirRequest(PDU* pdu)
+{
+    char strPrePath[pdu -> uiMsgLen]; // 进入文件夹路径
+    memcpy(strPrePath, (char*)pdu -> caMsg, pdu -> uiMsgLen);
+    qDebug() << "上一目录： " << strPrePath;
+    PDU* resPdu = NULL;
+    QDir dir(strPrePath);
+
+    if(!dir.exists()) // 请求文件夹不存在
+    {
+        resPdu = mkPDU(0);
+        strncpy(resPdu -> caData, PATH_NOT_EXIST, 32);
+    }
+    else // 存在
+    {
+        resPdu = handleFlushDirRequest(pdu); // 通过该函数获取文件夹下内容
+    }
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_PRE_DIR_RESPOND;
+    qDebug() << "1 resPdu -> caData ：" << resPdu -> caData;
+    if(strcmp(resPdu -> caData, FLUSH_DIR_OK) == 0)
+    {
+        strncpy(resPdu -> caData, PRE_DIR_OK, 32);
+        qDebug() << "2 resPdu -> caData ：" << resPdu -> caData;
+    }
+    else
+    {
+        strncpy(resPdu -> caData, PRE_DIR_FAILED, 32);
+        qDebug() << "2 resPdu -> caData ：" << resPdu -> caData;
     }
 
     return resPdu;
@@ -569,6 +614,11 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_ENTRY_DIR_REQUEST: // 进入文件夹请求
     {
         resPdu = handleEntryDirRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_PRE_DIR_REQUEST: // 上一目录请求
+    {
+        resPdu = handlePreDirRequest(pdu);
         break;
     }
     default:

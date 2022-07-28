@@ -46,6 +46,9 @@ typedef unsigned int uint;
 #define ENTRY_DIR_OK "entry dir ok"                      // 进入目录
 #define ENTRY_DIR_FAILED "entry dir failed"
 
+#define PRE_DIR_OK "return pre dir ok"                   // 上一目录
+#define PRE_DIR_FAILED "return pre dir failed"
+
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
 // 枚举方式，定义消息类型
@@ -99,6 +102,9 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_ENTRY_DIR_REQUEST, // 进入文件夹请求
     ENUM_MSG_TYPE_ENTRY_DIR_RESPOND, // 进入文件夹回复
+
+    ENUM_MSG_TYPE_PRE_DIR_REQUEST, // 上一文件夹请求
+    ENUM_MSG_TYPE_PRE_DIR_RESPOND, // 上一文件夹回复
 
     ENUM_MSG_TYPE_MAX = 0x00ffffff, // uint最大值 0xffffffff
 };

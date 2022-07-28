@@ -49,6 +49,8 @@ FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
             this, SLOT(renameFile()));
     connect(m_pFileListW, SIGNAL(doubleClicked(QModelIndex)),
             this, SLOT(entryDir(QModelIndex)));
+    connect(m_pReturnPrePB, SIGNAL(clicked(bool)),
+            this, SLOT(returnPreDir()));
 }
 
 void FileSystem::updateFileList(PDU *pdu)
@@ -184,6 +186,30 @@ void FileSystem::entryDir(const QModelIndex &index)
     pdu = NULL;
 }
 
+void FileSystem::returnPreDir()
+{
+    QString strCurPath = TcpClient::getInstance().getStrCurPath();
+    QString strRootPath = TcpClient::getInstance().getStrRootPath();
+
+    if(strCurPath == strRootPath)
+    {
+        QMessageBox::warning(this, "返回上一目录", "已经是根目录！");
+        return ;
+    }
+    int index = strCurPath.lastIndexOf("/");
+    strCurPath = strCurPath.remove(index, strCurPath.size() - index);
+    qDebug() << "返回到" << strCurPath;
+    m_strTryEntryDir = strCurPath; // 临时存储目标目录
+
+    // 给服务器发消息
+    PDU* pdu = mkPDU(strCurPath.size() + 1);
+    pdu -> uiMsgType = ENUM_MSG_TYPE_PRE_DIR_REQUEST;
+    memcpy((char*)pdu -> caMsg, strCurPath.toStdString().c_str(), strCurPath.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+    free(pdu);
+    pdu = NULL;
+}
+
 QString FileSystem::strTryEntryDir() const
 {
     return m_strTryEntryDir;
@@ -192,4 +218,9 @@ QString FileSystem::strTryEntryDir() const
 void FileSystem::setStrTryEntryDir(const QString &strTryEntryDir)
 {
     m_strTryEntryDir = strTryEntryDir;
+}
+
+void FileSystem::clearStrTryEntryDir()
+{
+    m_strTryEntryDir.clear();
 }

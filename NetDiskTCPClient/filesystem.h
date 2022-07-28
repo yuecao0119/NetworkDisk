@@ -17,6 +17,7 @@ public:
 
     QString strTryEntryDir() const;
     void setStrTryEntryDir(const QString &strTryEntryDir);
+    void clearStrTryEntryDir(); // 清空m_strTryEntryDir
 
 public slots:
     void createDir();  // 创建文件夹按钮槽函数
@@ -24,6 +25,7 @@ public slots:
     void delFileOrDir(); // 删除文件或文件夹按钮槽函数
     void renameFile(); // 重命名文件或文件夹槽函数
     void entryDir(const QModelIndex &index);   // 双击进入文件夹的槽函数
+    void returnPreDir(); // 返回上一目录
 
 signals:
 
