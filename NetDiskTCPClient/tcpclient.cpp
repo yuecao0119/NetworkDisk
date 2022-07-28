@@ -236,11 +236,27 @@ void TcpClient::receiveMsg()
     case ENUM_MSG_TYPE_FLUSH_DIR_RESPOND: // 刷新文件夹响应
     {
         OperateWidget::getInstance().getPFileSystem()->updateFileList(pdu);
+        QString entryPath = OperateWidget::getInstance().getPFileSystem()->strTryEntryDir();
+        if(!entryPath.isEmpty())
+        {
+            m_strCurPath = entryPath;
+            qDebug() << "当前路径：" << m_strCurPath;
+        }
         break;
     }
     case ENUM_MSG_TYPE_DELETE_FILE_RESPOND: // 删除文件或文件夹响应
     {
         QMessageBox::information(this, "删除文件", pdu -> caData);
+        break;
+    }
+    case ENUM_MSG_TYPE_RENAME_FILE_RESPOND: // 重命名文件或文件夹响应
+    {
+        QMessageBox::information(this, "重命名文件", pdu -> caData);
+        break;
+    }
+    case ENUM_MSG_TYPE_ENTRY_DIR_RESPOND: // 进入文件夹 失败 响应
+    {
+        QMessageBox::warning(this, "进入文件夹", pdu -> caData);
         break;
     }
     default:

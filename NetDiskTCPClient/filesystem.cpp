@@ -6,6 +6,8 @@
 
 FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
 {
+    m_strTryEntryDir.clear(); // 开始时清空要进入的文件夹的属性值
+
     m_pFileListW = new QListWidget; // 文件列表，显示所有文件
 
     m_pReturnPrePB = new QPushButton("返回");
@@ -43,6 +45,10 @@ FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
             this, SLOT(flushDir()));
     connect(m_pDelFileOrDirPB, SIGNAL(clicked(bool)),
             this, SLOT(delFileOrDir()));
+    connect(m_pRenameFilePB, SIGNAL(clicked(bool)),
+            this, SLOT(renameFile()));
+    connect(m_pFileListW, SIGNAL(doubleClicked(QModelIndex)),
+            this, SLOT(entryDir(QModelIndex)));
 }
 
 void FileSystem::updateFileList(PDU *pdu)
@@ -128,4 +134,62 @@ void FileSystem::delFileOrDir()
     TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
     free(pdu);
     pdu = NULL;
+}
+
+void FileSystem::renameFile()
+{
+    QString strCurPath = TcpClient::getInstance().getStrCurPath();
+    QListWidgetItem *qItem = m_pFileListW->currentItem(); // 获得当前选中文件
+    if(NULL == qItem)
+    {
+        QMessageBox::warning(this, "重命名文件", "请选择需要重命名的文件！");
+        return ;
+    }
+    QString strOldName = qItem -> text().split('\t')[0]; // 获取旧文件名
+    QString strNewName = QInputDialog::getText(this, "文件重命名", "新文件名："); // 新文件名
+    qDebug() << "重命名：" << strCurPath << " " << strOldName << " -> " << strNewName;
+
+    if(strNewName.isEmpty())
+    {
+        QMessageBox::warning(this, "重命名文件", "文件名不能为空！");
+        return ;
+    }
+
+    PDU *pdu = mkPDU(strCurPath.size() + 1);
+
+    pdu -> uiMsgType = ENUM_MSG_TYPE_RENAME_FILE_REQUEST;
+    // 传输给服务器 旧名字 新名字 目录路径
+    strncpy(pdu -> caData, strOldName.toStdString().c_str(), 32);
+    strncpy(pdu -> caData + 32, strNewName.toStdString().c_str(), 32);
+    memcpy((char*)pdu ->caMsg, strCurPath.toStdString().c_str(), strCurPath.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+    free(pdu);
+    pdu = NULL;
+}
+
+void FileSystem::entryDir(const QModelIndex &index)
+{
+    QString strCurPath = TcpClient::getInstance().getStrCurPath();
+    QString strFileName = index.data().toString();
+    strFileName = strFileName.split('\t')[0]; // 获得双击的文件名
+    QString strEntryPath = QString("%1/%2").arg(strCurPath).arg(strFileName);
+    qDebug() << "进入 " << strEntryPath;
+    m_strTryEntryDir = strEntryPath; // 将想要进入的目录临时存储下来
+    PDU* pdu = mkPDU(strEntryPath.size() + 1);
+
+    pdu -> uiMsgType = ENUM_MSG_TYPE_ENTRY_DIR_REQUEST;
+    memcpy((char*)pdu -> caMsg, strEntryPath.toStdString().c_str(), strEntryPath.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+    free(pdu);
+    pdu = NULL;
+}
+
+QString FileSystem::strTryEntryDir() const
+{
+    return m_strTryEntryDir;
+}
+
+void FileSystem::setStrTryEntryDir(const QString &strTryEntryDir)
+{
+    m_strTryEntryDir = strTryEntryDir;
 }

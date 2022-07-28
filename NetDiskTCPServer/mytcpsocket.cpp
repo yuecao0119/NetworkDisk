@@ -416,6 +416,67 @@ PDU* handleDelFileOrDirRequest(PDU* pdu)
     return resPdu;
 }
 
+// 重命名文件或文件夹请求处理
+PDU* handleRenameFileRequest(PDU* pdu)
+{
+    PDU* resPdu = mkPDU(0);
+    char caCurPath[pdu -> uiMsgLen];
+    char caOldName[32]; // 旧文件名
+    char caNewName[32]; // 新文件名
+    memcpy(caCurPath, (char*)pdu -> caMsg, pdu -> uiMsgLen);
+    strncpy(caOldName, pdu -> caData, 32);
+    strncpy(caNewName, pdu -> caData + 32, 32);
+    qDebug() << "重命名文件：" << caCurPath << " " << caOldName << " -> " << caNewName;
+    QDir dir;
+
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_RENAME_FILE_RESPOND;
+    dir.setPath(caCurPath);
+    if(dir.rename(caOldName, caNewName))
+    {
+        strncpy(resPdu -> caData, RENAME_FILE_OK, 32);
+    }
+    else
+    {
+        strncpy(resPdu -> caData, RENAME_FILE_FAILED, 32);
+    }
+    qDebug() << resPdu -> caData;
+
+    return resPdu;
+}
+
+// 进入文件夹请求处理
+PDU* handleEntryDirRequest(PDU* pdu)
+{
+    char strEntryPath[pdu -> uiMsgLen]; // 进入文件夹路径
+    memcpy(strEntryPath, (char*)pdu -> caMsg, pdu -> uiMsgLen);
+    qDebug() << "进入 " << strEntryPath;
+    PDU* resPdu = NULL;
+    QDir dir(strEntryPath);
+
+    if(!dir.exists()) // 请求文件夹不存在
+    {
+        resPdu = mkPDU(0);
+        strncpy(resPdu -> caData, PATH_NOT_EXIST, 32);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_ENTRY_DIR_RESPOND;
+    }
+    else // 存在
+    {
+        QFileInfo fileInfo(strEntryPath);
+        if(!fileInfo.isDir()) // 不是文件夹
+        {
+            resPdu = mkPDU(0);
+            strncpy(resPdu -> caData, ENTRY_DIR_FAILED, 32);
+            resPdu -> uiMsgType = ENUM_MSG_TYPE_ENTRY_DIR_RESPOND;
+        }
+        else
+        {
+            resPdu = handleFlushDirRequest(pdu); // 通过该函数获取文件夹下内容
+        }
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // qDebug() << this -> bytesAvailable(); // 输出接收到的数据大小
@@ -498,6 +559,16 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_DELETE_FILE_REQUEST: // 删除文件请求
     {
         resPdu = handleDelFileOrDirRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_RENAME_FILE_REQUEST: // 重命名文件请求
+    {
+        resPdu = handleRenameFileRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_ENTRY_DIR_REQUEST: // 进入文件夹请求
+    {
+        resPdu = handleEntryDirRequest(pdu);
         break;
     }
     default:

@@ -40,6 +40,12 @@ typedef unsigned int uint;
 #define DELETE_FILE_OK "delete file ok"                  // 删除文件夹
 #define DELETE_FILE_FAILED "delete file failed"
 
+#define RENAME_FILE_OK "rename file ok"                  // 重命名文件
+#define RENAME_FILE_FAILED "rename file failed"
+
+#define ENTRY_DIR_OK "entry dir ok"                      // 进入目录
+#define ENTRY_DIR_FAILED "entry dir failed"
+
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
 // 枚举方式，定义消息类型
@@ -87,6 +93,12 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_DELETE_FILE_REQUEST, // 刷新文件夹请求
     ENUM_MSG_TYPE_DELETE_FILE_RESPOND, // 刷新文件夹回复
+
+    ENUM_MSG_TYPE_RENAME_FILE_REQUEST, // 重命名文件夹请求
+    ENUM_MSG_TYPE_RENAME_FILE_RESPOND, // 重命名文件夹回复
+
+    ENUM_MSG_TYPE_ENTRY_DIR_REQUEST, // 进入文件夹请求
+    ENUM_MSG_TYPE_ENTRY_DIR_RESPOND, // 进入文件夹回复
 
     ENUM_MSG_TYPE_MAX = 0x00ffffff, // uint最大值 0xffffffff
 };
