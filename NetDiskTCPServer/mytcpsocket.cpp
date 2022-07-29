@@ -595,6 +595,45 @@ PDU* handleDownloadFileRequest(PDU* pdu, QFile *fDownloadFile, QTimer *pTimer)
     return resPdu;
 }
 
+// 移动文件请求处理
+PDU* handleMoveFileRequest(PDU* pdu)
+{
+    char caMoveFileName[32]; // 要移动文件名
+    int iOldDirSize = 0;
+    int iDesDirSize = 0;
+    sscanf(pdu -> caData, "%s %d %d", caMoveFileName, &iDesDirSize, &iOldDirSize);
+    char caOldDir[iOldDirSize + 33]; // +33是为了拼接文件名
+    char caDesDir[iDesDirSize + 33];
+    sscanf((char*)pdu -> caMsg, "%s %s", caDesDir, caOldDir);
+    qDebug() << "移动文件：" << caMoveFileName << "从" << caOldDir << "到" << caDesDir;
+
+    QFileInfo fileInfo(caDesDir);
+    PDU* resPdu = mkPDU(0);
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_MOVE_FILE_RESPOND;
+
+    if(!fileInfo.isDir())
+    {
+        strncpy(resPdu -> caData, MOVE_FILE_FAILED, 32);
+        return resPdu;
+    }
+
+    // 拼接文件名
+    strcat(caOldDir, "/");
+    strcat(caOldDir, caMoveFileName);
+    strcat(caDesDir, "/");
+    strcat(caDesDir, caMoveFileName);
+    if (QFile::rename(caOldDir, caDesDir)) // 移动
+    {
+        strncpy(resPdu -> caData, MOVE_FILE_OK, 32);
+    }
+    else
+    {
+        strncpy(resPdu -> caData, MOVE_FILE_FAILED, 32);
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // 所处状态是接收文件
@@ -746,6 +785,11 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_DOWNLOAD_FILE_REQUEST: // 下载文件请求
     {
         resPdu = handleDownloadFileRequest(pdu, m_pDownloadFile, m_pTimer);
+        break;
+    }
+    case ENUM_MSG_TYPE_MOVE_FILE_REQUEST: // 移动文件请求
+    {
+        resPdu = handleMoveFileRequest(pdu);
         break;
     }
     default:

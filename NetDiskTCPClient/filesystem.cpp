@@ -18,23 +18,28 @@ FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
     m_pCreateDirPB = new QPushButton("创建文件夹");
     m_pDelFileOrDirPB = new QPushButton("删除");
     m_pFlushDirPB = new QPushButton("刷新文件夹");
+    m_pRenameFilePB = new QPushButton("重命名");
 
     QHBoxLayout *pDirOpVBL = new QHBoxLayout;
     pDirOpVBL -> addWidget(m_pReturnPrePB);
     pDirOpVBL -> addWidget(m_pCreateDirPB);
     pDirOpVBL -> addWidget(m_pFlushDirPB);
     pDirOpVBL -> addWidget(m_pDelFileOrDirPB);
+    pDirOpVBL -> addWidget(m_pRenameFilePB);
 
-    m_pRenameFilePB = new QPushButton("重命名文件");
     m_pUploadFilePB = new QPushButton("上传文件");
     m_pDownloadFilePB = new QPushButton("下载文件");
     m_pShareFilePB = new QPushButton("分享文件");
+    m_pMoveFilePB = new QPushButton("移动文件");
+    m_pMoveDesDirDB = new QPushButton("目标目录");
+    m_pMoveDesDirDB->setEnabled(false); // 设置目标文件不可点击
 
     QHBoxLayout *pFileOpVBL = new QHBoxLayout;
-    pFileOpVBL -> addWidget(m_pRenameFilePB);
     pFileOpVBL -> addWidget(m_pUploadFilePB);
     pFileOpVBL -> addWidget(m_pDownloadFilePB);
     pFileOpVBL -> addWidget(m_pShareFilePB);
+    pFileOpVBL -> addWidget(m_pMoveFilePB);
+    pFileOpVBL -> addWidget(m_pMoveDesDirDB);
 
     QVBoxLayout *pMainVBL = new QVBoxLayout;
     pMainVBL -> addLayout(pDirOpVBL);
@@ -61,6 +66,10 @@ FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
             this, SLOT(uploadFileData()));
     connect(m_pDownloadFilePB, SIGNAL(clicked(bool)),
             this, SLOT(downloadFile()));
+    connect(m_pMoveFilePB, SIGNAL(clicked(bool)),
+            this, SLOT(moveFile()));
+    connect(m_pMoveDesDirDB, SIGNAL(clicked(bool)),
+            this, SLOT(moveDesDir()));
 }
 
 void FileSystem::updateFileList(PDU *pdu)
@@ -321,6 +330,54 @@ void FileSystem::downloadFile()
 
     free(pdu);
     pdu = NULL;
+}
+
+void FileSystem::moveFile()
+{
+    QListWidgetItem *pItem = m_pFileListW->currentItem();
+    if(pItem == NULL)
+    {
+        QMessageBox::warning(this, "移动文件", "请选择需要移动的文件！");
+        return ;
+    }
+
+    m_strMoveFileName = pItem -> text().split('\t')[0]; // 设置需要移动的文件名
+    m_strMoveOldDir = TcpClient::getInstance().getStrCurPath(); // 设置移动文件的原目录
+
+    m_pMoveDesDirDB->setEnabled(true); // 设置目标目录可点击
+    QMessageBox::information(this, "移动文件", "请跳转到需要移动到的目录，\n然后点击“目标目录”按钮。");
+}
+
+void FileSystem::moveDesDir()
+{
+    QString strDesDir = TcpClient::getInstance().getStrCurPath(); // 设置移动文件的目标目录
+    QMessageBox::StandardButton sbMoveAffirm; // 确认弹框返回值
+    QString strMoveAffirm = QString("您确认将 %1 的 %2 文件\n移动到 %3 目录下吗？")
+            .arg(m_strMoveOldDir).arg(m_strMoveFileName).arg(strDesDir);
+    sbMoveAffirm = QMessageBox::question(this, "移动文件", strMoveAffirm);
+    if(sbMoveAffirm == QMessageBox::No) // 不移动
+    {
+        m_strMoveOldDir.clear();
+        m_strMoveFileName.clear();
+        m_pMoveDesDirDB->setEnabled(false);
+        return ;
+    }
+
+    qDebug() << "移动文件：" << strMoveAffirm;
+    // 确认移动文件
+    PDU *pdu = mkPDU(strDesDir.size() + m_strMoveOldDir.size() + 5);
+
+    pdu -> uiMsgType = ENUM_MSG_TYPE_MOVE_FILE_REQUEST;
+    sprintf((char*)pdu -> caMsg, "%s %s", strDesDir.toStdString().c_str(),
+            m_strMoveOldDir.toStdString().c_str());
+    sprintf(pdu -> caData, "%s %d %d", m_strMoveFileName.toStdString().c_str(), strDesDir.size(), m_strMoveOldDir.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+    free(pdu);
+    pdu = NULL;
+
+    m_strMoveOldDir.clear();
+    m_strMoveFileName.clear();
+    m_pMoveDesDirDB->setEnabled(false);
 }
 
 TransFile *FileSystem::getDownloadFileInfo()

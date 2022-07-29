@@ -31,6 +31,8 @@ public slots:
     void startTimer(); // 开始定时器
     void uploadFileData(); // 上传文件实际数据
     void downloadFile(); // 下载文件请求
+    void moveFile(); // 移动文件
+    void moveDesDir(); // 移动文件目的文件夹
     TransFile* getDownloadFileInfo(); // 获取m_downloadFile
 
 signals:
@@ -48,12 +50,18 @@ private:
     QPushButton *m_pDownloadFilePB; // 下载文件
     QPushButton *m_pShareFilePB;    // 分享文件
 
+    QPushButton *m_pMoveFilePB;     // 移动文件
+    QPushButton *m_pMoveDesDirDB;   // 移动目标目录
+
     QString m_strTryEntryDir;       // 临时记录想要进入的目录，如进入成功更新m_strCurPath
 
     QString m_strUploadFilePath;    // 上传文件的文件路径
     QTimer *m_pTimer;               // 定时器，为了间隔开文件上传时间
 
     TransFile *m_downloadFile;      // 下载文件属性
+
+    QString m_strMoveFileName;      // 移动文件名
+    QString m_strMoveOldDir;       // 移动文件原目录
 };
 
 #endif // FILESYSTEM_H

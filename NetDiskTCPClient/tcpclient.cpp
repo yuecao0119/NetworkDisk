@@ -366,6 +366,11 @@ void TcpClient::receiveMsg()
         }
         break;
     }
+    case ENUM_MSG_TYPE_MOVE_FILE_RESPOND: // 移动文件响应
+    {
+        QMessageBox::information(this, "移动文件", pdu -> caData);
+        break;
+    }
     default:
         break;
     }
