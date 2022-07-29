@@ -7,10 +7,13 @@ MyTcpSocket::MyTcpSocket()
 {
     m_uploadFile = new TransFile;
     m_uploadFile->bTransform = false; // 默认不是在上传文件
+    m_pDownloadFile = new QFile;
+    m_pTimer = new QTimer;
 
     connect(this, SIGNAL(readyRead()), // 当接收到客户端的数据时，服务器会发送readyRead()信号
             this, SLOT(receiveMsg())); // 需要由服务器的相应receiveMsg槽函数进行处理
     connect(this, SIGNAL(disconnected()), this, SLOT(handleClientOffline())); // 关联Socket连接断开与客户端下线处理槽函数
+    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(handledownloadFileData())); // 关联计时器倒计时
 }
 
 QString MyTcpSocket::getStrName()
@@ -557,6 +560,41 @@ PDU* handleUploadFileRequest(PDU* pdu, TransFile* transFile)
     return resPdu;
 }
 
+// 下载文件请求处理
+PDU* handleDownloadFileRequest(PDU* pdu, QFile *fDownloadFile, QTimer *pTimer)
+{
+    char caFileName[32] = {'\0'};
+    char caCurPath[pdu -> uiMsgLen];
+    memcpy(caFileName, pdu -> caData, 32);
+    memcpy(caCurPath, (char*)pdu -> caMsg, pdu -> uiMsgLen);
+    QString strDownloadFilePath = QString("%1/%2").arg(caCurPath).arg(caFileName);
+    fDownloadFile->setFileName(strDownloadFilePath);
+
+    qDebug() << "下载文件：" << strDownloadFilePath;
+    qint64 fileSize = fDownloadFile -> size();
+
+    PDU *resPdu = NULL;
+    if(fDownloadFile->open(QIODevice::ReadOnly))
+    {
+        resPdu = mkPDU(32 + sizeof (qint64) + 5);
+
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_DOWNLOAD_FILE_RESPOND;
+        strncpy(resPdu -> caData, DOWNLOAD_FILE_START, 32);
+        sprintf((char*)resPdu -> caMsg, "%s %lld", caFileName, fileSize);
+        pTimer -> start(1000); // 开始计时器1000ms
+        qDebug() << (char*)resPdu -> caMsg;
+    }
+    else // 打开文件失败
+    {
+        resPdu = mkPDU(0);
+
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_DOWNLOAD_FILE_RESPOND;
+        strncpy(resPdu -> caData, DOWNLOAD_FILE_FAILED, 32);
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // 所处状态是接收文件
@@ -700,9 +738,14 @@ void MyTcpSocket::receiveMsg()
         resPdu = handlePreDirRequest(pdu);
         break;
     }
-    case ENUM_MSG_TYPE_UPLOAD_FILE_REQUEST: // 上一目录请求
+    case ENUM_MSG_TYPE_UPLOAD_FILE_REQUEST: // 上传文件请求
     {
         resPdu = handleUploadFileRequest(pdu, m_uploadFile);
+        break;
+    }
+    case ENUM_MSG_TYPE_DOWNLOAD_FILE_REQUEST: // 下载文件请求
+    {
+        resPdu = handleDownloadFileRequest(pdu, m_pDownloadFile, m_pTimer);
         break;
     }
     default:
@@ -727,6 +770,37 @@ void MyTcpSocket::handleClientOffline()
 {
     DBOperate::getInstance().handleOffline(m_strName.toStdString().c_str());
     emit offline(this); // 发送给mytcpserver该socket删除信号
+}
+
+void MyTcpSocket::handledownloadFileData()
+{
+    m_pTimer->stop(); // 停止计时器
+    // 循环传输数据
+    char *pBuffer = new char[4096];
+    qint64 iActualSize = 0; // 实际读取文件大小
+
+    while(true)
+    {
+        iActualSize = m_pDownloadFile->read(pBuffer, 4096);
+        if (iActualSize > 0 && iActualSize <= 4096)
+        {
+            this -> write(pBuffer, iActualSize);
+        }
+        else if (iActualSize == 0)
+        { // 发送完成
+            break;
+        }
+        else
+        {
+            qDebug() << "发送文件数据给客户端出错！";
+            break;
+        }
+    }
+
+    m_pDownloadFile -> close(); // 关闭文件
+    delete [] pBuffer;
+    pBuffer = NULL;
+    m_pDownloadFile->setFileName(""); // 清除上传文件夹名，以免影响之后上传操作
 }
 
 

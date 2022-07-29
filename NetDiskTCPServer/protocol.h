@@ -50,9 +50,13 @@ typedef unsigned int uint;
 #define PRE_DIR_OK "return pre dir ok"                   // 上一目录
 #define PRE_DIR_FAILED "return pre dir failed"
 
-#define UPLOAD_FILE_OK "upload file ok"                   // 上一目录
+#define UPLOAD_FILE_OK "upload file ok"                  // 上传文件
 #define UPLOAD_FILE_FAILED "upload file failed"
 #define UPLOAD_FILE_START "start upload file data"
+
+#define DOWNLOAD_FILE_OK "download file ok"              // 下载文件
+#define DOWNLOAD_FILE_FAILED "download file failed"
+#define DOWNLOAD_FILE_START "start download file data"
 
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
@@ -113,6 +117,9 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_UPLOAD_FILE_REQUEST, // 上传文件请求
     ENUM_MSG_TYPE_UPLOAD_FILE_RESPOND, // 上传文件回复
+
+    ENUM_MSG_TYPE_DOWNLOAD_FILE_REQUEST, // 下载文件请求
+    ENUM_MSG_TYPE_DOWNLOAD_FILE_RESPOND, // 下载文件响应
 
     ENUM_MSG_TYPE_MAX = 0x00ffffff, // uint最大值 0xffffffff
 };

@@ -8,9 +8,10 @@
 FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
 {
     m_strTryEntryDir.clear(); // 开始时清空要进入的文件夹的属性值
-
+    m_strUploadFilePath.clear();
     m_pTimer = new QTimer;
-
+    m_downloadFile = new TransFile;
+    m_downloadFile->bTransform = false;
     m_pFileListW = new QListWidget; // 文件列表，显示所有文件
 
     m_pReturnPrePB = new QPushButton("返回");
@@ -58,6 +59,8 @@ FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
             this, SLOT(uploadFile()));
     connect(m_pTimer, SIGNAL(timeout()),   // 时间间隔之后再上传文件，防止粘包
             this, SLOT(uploadFileData()));
+    connect(m_pDownloadFilePB, SIGNAL(clicked(bool)),
+            this, SLOT(downloadFile()));
 }
 
 void FileSystem::updateFileList(PDU *pdu)
@@ -285,8 +288,46 @@ void FileSystem::uploadFileData()
     file.close();
     delete [] pBuffer;
     pBuffer = NULL;
-    m_strUploadFilePath.clear(); // 清楚上传文件夹名，以免影响之后上传操作
+    m_strUploadFilePath.clear(); // 清除上传文件夹名，以免影响之后上传操作
 }
+
+void FileSystem::downloadFile()
+{
+    QListWidgetItem *pItem = m_pFileListW->currentItem(); // 选择要下载的文件
+    if(NULL == pItem)
+    {
+        QMessageBox::warning(this, "下载文件", "请选择要下载的文件！");
+        return ;
+    }
+    // 获取保存的位置
+    QString strDownloadFilePath = QFileDialog::getSaveFileName();
+    if(strDownloadFilePath.isEmpty())
+    {
+        QMessageBox::warning(this, "下载文件", "请指定下载文件的位置！");
+        m_downloadFile->file.setFileName(""); // 清空
+        return ;
+    }
+
+    m_downloadFile->file.setFileName(strDownloadFilePath);
+
+    QString strCurPath = TcpClient::getInstance().getStrCurPath(); // 当前路径
+    QString strFileName = pItem->text().split('\t')[0]; // 获取文件名
+    PDU* pdu = mkPDU(strCurPath.size() + 1);
+    pdu -> uiMsgType = ENUM_MSG_TYPE_DOWNLOAD_FILE_REQUEST;
+    memcpy((char*)pdu -> caMsg, strCurPath.toStdString().c_str(), strCurPath.size());
+    strncpy(pdu -> caData, strFileName.toStdString().c_str(), strFileName.size());
+    TcpClient::getInstance().getTcpSocket().write((char*)pdu, pdu -> uiPDULen);
+    qDebug() << "下载文件：" << pdu -> caData;
+
+    free(pdu);
+    pdu = NULL;
+}
+
+TransFile *FileSystem::getDownloadFileInfo()
+{
+    return m_downloadFile;
+}
+
 
 QString FileSystem::strTryEntryDir() const
 {

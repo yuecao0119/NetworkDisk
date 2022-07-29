@@ -30,6 +30,8 @@ public slots:
     void uploadFile();  // 上传文件请求
     void startTimer(); // 开始定时器
     void uploadFileData(); // 上传文件实际数据
+    void downloadFile(); // 下载文件请求
+    TransFile* getDownloadFileInfo(); // 获取m_downloadFile
 
 signals:
 
@@ -50,6 +52,8 @@ private:
 
     QString m_strUploadFilePath;    // 上传文件的文件路径
     QTimer *m_pTimer;               // 定时器，为了间隔开文件上传时间
+
+    TransFile *m_downloadFile;      // 下载文件属性
 };
 
 #endif // FILESYSTEM_H

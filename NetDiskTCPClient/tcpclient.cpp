@@ -67,6 +67,37 @@ void TcpClient::showConnect()
 
 void TcpClient::receiveMsg()
 {
+    // 如果处于接收文件数据的状态
+    TransFile *transFile = OperateWidget::getInstance().getPFileSystem()->getDownloadFileInfo();
+    if(transFile->bTransform)
+    {
+        QByteArray baBuffer = m_tcpSocket.readAll();
+        transFile->file.write(baBuffer);
+
+        transFile->iReceivedSize += baBuffer.size();
+        if(transFile->iReceivedSize == transFile->iTotalSize)
+        {
+
+            QMessageBox::information(this, "下载文件", "下载文件成功！");
+            transFile->file.close();
+            transFile->file.setFileName("");
+            transFile->bTransform = false;
+            transFile->iTotalSize = 0;
+            transFile->iReceivedSize = 0;
+        }
+        else if(transFile->iReceivedSize > transFile->iTotalSize)
+        {
+            QMessageBox::warning(this, "下载文件", "下载文件失败！");
+            transFile->file.close();
+            transFile->file.setFileName("");
+            transFile->bTransform = false;
+            transFile->iTotalSize = 0;
+            transFile->iReceivedSize = 0;
+        }
+        return ;
+    }
+
+    // 否则，处理其他响应PDU
     // qDebug() << m_tcpSocket.bytesAvailable(); // 输出接收到的数据大小
     uint uiPDULen = 0;
     m_tcpSocket.read((char*)&uiPDULen, sizeof(uint)); // 先读取uint大小的数据，首个uint正是总数据大小
@@ -301,6 +332,37 @@ void TcpClient::receiveMsg()
         else if(strcmp(UPLOAD_FILE_FAILED, pdu -> caData) == 0) // 上传失败
         {
             QMessageBox::warning(this, "上传文件", pdu -> caData);
+        }
+        break;
+    }
+    case ENUM_MSG_TYPE_DOWNLOAD_FILE_RESPOND: // 下载文件响应
+    {
+        if(strcmp(DOWNLOAD_FILE_START, pdu -> caData) == 0) // 开始下载文件数据内容
+        {
+            // TransFile *transFile = OperateWidget::getInstance().getPFileSystem()->getDownloadFileInfo();
+            qint64 ifileSize = 0;
+            char strFileName[32];
+            sscanf((char*)pdu -> caMsg, "%s %lld", strFileName, &ifileSize);
+            qDebug() << "下载文件中：" << strFileName << ifileSize;
+
+            if(strlen(strFileName) > 0 && transFile->file.open(QIODevice::WriteOnly))
+            {
+                transFile->bTransform = true;
+                transFile->iTotalSize = ifileSize;
+                transFile->iReceivedSize = 0;
+            }
+            else
+            {
+                QMessageBox::warning(this, "下载文件", "下载文件失败！");
+            }
+        }
+        else if(strcmp(DOWNLOAD_FILE_OK, pdu -> caData) == 0) // 下载文件成功
+        {
+            QMessageBox::information(this, "下载文件", pdu -> caData);
+        }
+        else if(strcmp(DOWNLOAD_FILE_FAILED, pdu -> caData) == 0) // 下载失败
+        {
+            QMessageBox::warning(this, "下载文件", pdu -> caData);
         }
         break;
     }
