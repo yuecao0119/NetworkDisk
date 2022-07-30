@@ -48,6 +48,9 @@ FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
 
     setLayout(pMainVBL);
 
+
+    m_pSharedFileFLW = new sharedFileFriendList;
+
     connect(m_pCreateDirPB, SIGNAL(clicked(bool)),
             this, SLOT(createDir()));
     connect(m_pFlushDirPB, SIGNAL(clicked(bool)),
@@ -70,6 +73,8 @@ FileSystem::FileSystem(QWidget *parent) : QWidget(parent)
             this, SLOT(moveFile()));
     connect(m_pMoveDesDirDB, SIGNAL(clicked(bool)),
             this, SLOT(moveDesDir()));
+    connect(m_pShareFilePB, SIGNAL(clicked(bool)),
+            this, SLOT(shareFile()));
 }
 
 void FileSystem::updateFileList(PDU *pdu)
@@ -380,9 +385,44 @@ void FileSystem::moveDesDir()
     m_pMoveDesDirDB->setEnabled(false);
 }
 
+void FileSystem::shareFile()
+{
+    // 获取要分享文件的信息
+    QListWidgetItem *pFileItem = m_pFileListW->currentItem();
+    if(NULL == pFileItem)
+    {
+        QMessageBox::warning(this, "分享文件", "请选择要分享的文件！");
+        return ;
+    }
+    m_strSharedFileName = pFileItem->text().split('\t')[0]; // 要分享文件名
+    m_strSharedFilePath = QString("%1/%2").arg(TcpClient::getInstance().getStrCurPath())
+            .arg(m_strSharedFileName);
+    qDebug() << "分享文件：" << m_strSharedFilePath;
+
+    // 获得好友列表
+    QListWidget *friendLW = OperateWidget::getInstance().getPFriend()->getPFriendLW();
+    // 选择好友窗口展示
+    m_pSharedFileFLW->updateFriendList(friendLW);
+    if(m_pSharedFileFLW->isHidden()) // 如果窗口隐藏，则显示出来
+    {
+        m_pSharedFileFLW->show();
+    }
+
+}
+
 TransFile *FileSystem::getDownloadFileInfo()
 {
     return m_downloadFile;
+}
+
+QString FileSystem::getStrSharedFileName() const
+{
+    return m_strSharedFileName;
+}
+
+QString FileSystem::getStrSharedFilePath() const
+{
+    return m_strSharedFilePath;
 }
 
 

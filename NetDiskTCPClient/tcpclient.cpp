@@ -138,8 +138,8 @@ void TcpClient::receiveMsg()
             OperateWidget::getInstance().setUserLabel(caName); // 设置主页面用户信息
             OperateWidget::getInstance().show(); // 显示主操作页面
             // 默认 获取文件列表 请求好友列表
-            OperateWidget::getInstance().getPFileSystem() -> flushDir();
             OperateWidget::getInstance().getPFriend() -> flushFriendList();
+            OperateWidget::getInstance().getPFileSystem() -> flushDir();
 
             this -> hide(); // 隐藏登陆页面
         }
@@ -369,6 +369,47 @@ void TcpClient::receiveMsg()
     case ENUM_MSG_TYPE_MOVE_FILE_RESPOND: // 移动文件响应
     {
         QMessageBox::information(this, "移动文件", pdu -> caData);
+        break;
+    }
+    case ENUM_MSG_TYPE_SHARE_FILE_RESPOND: // 分享文件响应
+    {
+        QMessageBox::information(this, "分享文件", pdu -> caData);
+        break;
+    }
+    case ENUM_MSG_TYPE_SHARE_FILE_NOTE: // 被分享文件提醒
+    {
+        char caFileName[32]; // 文件名
+        char caSouName[32]; // 用户名
+        int iFilePathLen = pdu -> uiMsgLen;
+        char caFilePath[iFilePathLen]; // 文件路径
+
+        memcpy(caSouName, pdu -> caData, 32);
+        memcpy(caFileName, pdu -> caData + 32, 32);
+        QString strShareNote = QString("%1 想要分享 %2 文件给您，\n是否接收？").arg(caSouName).arg(caFileName);
+        QMessageBox::StandardButton sbShareNote = QMessageBox::question(this, "分享文件", strShareNote);
+        if(sbShareNote == QMessageBox::No)
+        { // 拒绝接收
+            break;
+        }
+
+        // 同意接收
+        qDebug() << "接收文件：" << caSouName <<" " << caFileName;
+        memcpy(caFilePath, (char*)pdu -> caMsg, iFilePathLen);
+        QString strRootDir = m_strRootPath; // 用户根目录
+        PDU *resPdu = mkPDU(iFilePathLen + strRootDir.size() + 1);
+        resPdu -> uiMsgType = ENUM_MSG_TYPE_SHARE_FILE_NOTE_RESPOND;
+        sprintf(resPdu -> caData, "%d %d", iFilePathLen, strRootDir.size());
+        sprintf((char*)resPdu -> caMsg, "%s %s", caFilePath, strRootDir.toStdString().c_str());
+        qDebug() << (char*)resPdu -> caMsg;
+        m_tcpSocket.write((char*)resPdu, resPdu -> uiPDULen);
+        free(resPdu);
+        resPdu = NULL;
+
+        break;
+    }
+    case ENUM_MSG_TYPE_SHARE_FILE_NOTE_RESPOND: // 被分享文件通知响应的处理结果
+    {
+        QMessageBox::information(this, "分享文件", pdu -> caData);
         break;
     }
     default:

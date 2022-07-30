@@ -232,6 +232,11 @@ void Friend::updateGroupShowMsgTE(PDU *pdu)
     m_pGroupShowMsgTE -> append(strMsg);
 }
 
+QListWidget *Friend::getPFriendLW() const
+{
+    return m_pFriendLW;
+}
+
 QString Friend::getStrSearchName() const
 {
     return m_strSearchName;

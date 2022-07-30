@@ -634,6 +634,121 @@ PDU* handleMoveFileRequest(PDU* pdu)
     return resPdu;
 }
 
+// 分享文件请求处理
+PDU* handleShareFileRequest(PDU* pdu, QString strSouName)
+{
+    int iUserNum = 0; // 分享好友数
+    char caFileName[32]; // 分享的文件名
+    sscanf(pdu -> caData, "%s %d", caFileName, &iUserNum);
+    qDebug() << "分享文件：" << caFileName << " 人数：" << iUserNum;
+
+    // 转发给被分享的好友分享文件通知
+    const int iFilePathLen = pdu->uiMsgLen - iUserNum * 32;
+    char caFilePath[iFilePathLen];
+    PDU* resPdu = mkPDU(iFilePathLen);
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_SHARE_FILE_NOTE;
+    memcpy(resPdu -> caData, strSouName.toStdString().c_str(), strSouName.size()); // 发送方
+    memcpy(resPdu -> caData + 32, caFileName, 32); // 发送文件名
+    memcpy(caFilePath, (char*)(pdu -> caMsg) + 32 * iUserNum, iFilePathLen);
+    memcpy((char*)resPdu -> caMsg, caFilePath, iFilePathLen); // 发送文件路径
+    // 遍历分享所有要接收文件的好友
+    char caDesName[32]; // 目标好友名
+    for(int i = 0; i < iUserNum; ++ i)
+    {
+        memcpy(caDesName, (char*)(pdu -> caMsg) + 32 * i, 32);
+        MyTcpServer::getInstance().forwardMsg(caDesName, resPdu);
+        qDebug() << caDesName;
+    }
+    free(resPdu);
+    resPdu = NULL;
+
+    // 回复发送方消息
+    resPdu = mkPDU(0);
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_SHARE_FILE_RESPOND;
+    strncpy(resPdu -> caData, SHARE_FILE_OK, 32);
+
+    return resPdu;
+}
+
+// 复制文件夹
+bool copyDir(QString strOldPath, QString strNewPath)
+{
+    int ret = true;
+    QDir dir; // 目录操作
+
+    qDebug() << "分享目录：" << strOldPath << " " << strNewPath;
+    dir.mkdir(strNewPath); // 新路径创建空目录
+    dir.setPath(strOldPath); // 设置为源目录
+    QFileInfoList fileInfoList = dir.entryInfoList(); // 获得源目录下文件列表
+    // 对源目录下所有文件（分为普通文件、文件夹）进行递归拷贝
+    QString strOldFile;
+    QString strNewFile;
+    for(QFileInfo fileInfo:fileInfoList)
+    {
+        if(fileInfo.fileName() == "." || fileInfo.fileName() == "..")
+        { // 注意不要忘记这个判断，"."和".."文件夹不用复制，不然会死循环
+            continue;
+        }
+        strOldFile = QString("%1/%2").arg(strOldPath).arg(fileInfo.fileName());
+        strNewFile = QString("%1/%2").arg(strNewPath).arg(fileInfo.fileName());
+        if(fileInfo.isFile())
+        {
+            ret = ret && QFile::copy(strOldFile, strNewFile);
+        }
+        else if(fileInfo.isDir())
+        {
+            ret = ret && copyDir(strOldFile, strNewFile);
+        }
+        qDebug() << strOldFile << " -> " << strNewFile;
+    }
+
+    return ret;
+}
+
+// 分享文件通知响应处理
+PDU* handleShareFileNoteRespond(PDU *pdu)
+{
+    int iOldPathLen = 0;
+    int iNewPathLen = 0;
+    sscanf(pdu -> caData, "%d %d", &iOldPathLen, &iNewPathLen);
+    char caOldPath[iOldPathLen];
+    char caNewDir[iNewPathLen];
+    sscanf((char*)pdu -> caMsg, "%s %s", caOldPath, caNewDir);
+
+    // 获得文件新的路径
+    char *pIndex = strrchr(caOldPath, '/'); // 获得最右侧的/的指针，找到文件名
+    QString strNewPath = QString("%1/%2").arg(caNewDir).arg(pIndex + 1);
+    qDebug() << "同意分享文件：" << caOldPath << " " << strNewPath;
+
+    QFileInfo fileInfo(caOldPath);
+    bool ret = false;
+    if(fileInfo.isFile())
+    {
+        ret = QFile::copy(caOldPath, strNewPath);
+    }
+    else if(fileInfo.isDir())
+    {
+        ret = copyDir(caOldPath, strNewPath);
+    }
+    else
+    {
+        ret = false;
+    }
+    // 回复接收方
+    PDU* resPdu = mkPDU(0);
+    resPdu -> uiMsgType = ENUM_MSG_TYPE_SHARE_FILE_NOTE_RESPOND;
+    if(ret)
+    {
+        memcpy(resPdu -> caData, SHARE_FILE_OK, 32);
+    }
+    else
+    {
+        memcpy(resPdu -> caData, SHARE_FILE_FAILED, 32);
+    }
+
+    return resPdu;
+}
+
 void MyTcpSocket::receiveMsg()
 {
     // 所处状态是接收文件
@@ -790,6 +905,16 @@ void MyTcpSocket::receiveMsg()
     case ENUM_MSG_TYPE_MOVE_FILE_REQUEST: // 移动文件请求
     {
         resPdu = handleMoveFileRequest(pdu);
+        break;
+    }
+    case ENUM_MSG_TYPE_SHARE_FILE_REQUEST: // 分享文件请求
+    {
+        resPdu = handleShareFileRequest(pdu, m_strName);
+        break;
+    }
+    case ENUM_MSG_TYPE_SHARE_FILE_NOTE_RESPOND: // 分享文件通知响应处理
+    {
+        resPdu = handleShareFileNoteRespond(pdu);
         break;
     }
     default:

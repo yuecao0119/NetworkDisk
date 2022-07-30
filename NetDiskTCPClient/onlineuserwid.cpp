@@ -44,7 +44,14 @@ void OnlineUserWid::setOnlineUsers(PDU *pdu)
 // 添加好友按钮转到槽函数
 void OnlineUserWid::on_addfriend_pb_clicked()
 {
-    QString strAddName = ui -> onlineuser_lw -> currentItem()->text(); // 获得要添加好友用户名
+    QListWidgetItem *pItem = ui -> onlineuser_lw -> currentItem();
+    if(NULL == pItem)
+    {
+        QMessageBox::warning(this, "添加好友", "请选择要添加的好友！");
+        return ;
+    }
+
+    QString strAddName = pItem->text(); // 获得要添加好友用户名
     QString strLoginName = TcpClient::getInstance().getStrName();           // 该用户自己用户名
     PDU* pdu = mkPDU(0);
 

@@ -23,6 +23,7 @@ SOURCES += \
     operatewidget.cpp \
     privatechatwid.cpp \
     protocol.cpp \
+    sharedfilefriendlist.cpp \
     tcpclient.cpp
 
 HEADERS += \
@@ -32,6 +33,7 @@ HEADERS += \
     operatewidget.h \
     privatechatwid.h \
     protocol.h \
+    sharedfilefriendlist.h \
     tcpclient.h
 
 FORMS += \

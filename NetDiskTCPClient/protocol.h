@@ -61,6 +61,9 @@ typedef unsigned int uint;
 #define MOVE_FILE_OK "move file ok"                      // 移动文件
 #define MOVE_FILE_FAILED "move file failed"
 
+#define SHARE_FILE_OK "share file ok"                      // 移动文件
+#define SHARE_FILE_FAILED "share file failed"
+
 #define UNKNOWN_ERROR "unknown error"                    // 通用未知错误
 
 // 枚举方式，定义消息类型
@@ -126,6 +129,11 @@ enum ENUM_MSG_TYPE
 
     ENUM_MSG_TYPE_MOVE_FILE_REQUEST, // 移动文件请求
     ENUM_MSG_TYPE_MOVE_FILE_RESPOND, // 移动文件响应
+
+    ENUM_MSG_TYPE_SHARE_FILE_REQUEST, // 移动文件请求
+    ENUM_MSG_TYPE_SHARE_FILE_RESPOND, // 移动文件响应
+    ENUM_MSG_TYPE_SHARE_FILE_NOTE, // 移动文件提示
+    ENUM_MSG_TYPE_SHARE_FILE_NOTE_RESPOND, // 移动文件提示响应
 
     ENUM_MSG_TYPE_MAX = 0x00ffffff, // uint最大值 0xffffffff
 };
