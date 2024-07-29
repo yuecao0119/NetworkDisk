@@ -48,5 +48,5 @@
 
 ## :computer:主要贡献者
 
-[@Light Ink](https://github.com/LightInk2020)，[@Evil Hare](https://github.com/eharecz)
+[@Light Ink](https://github.com/LightInk2020)
 
